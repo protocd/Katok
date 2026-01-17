@@ -1,0 +1,29 @@
+# Конфигурационные файлы с секретами
+backend/config/config.php
+backend/config/database.php
+
+# Логи
+*.log
+
+# Временные файлы
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Зависимости (если будут)
+vendor/
+node_modules/
+
+# Кэш
+cache/
+*.cache
+
+# Загруженные файлы (если будут)
+uploads/
