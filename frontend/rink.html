@@ -135,6 +135,9 @@
                 
                 document.getElementById('rinkDetails').innerHTML = details;
             }
+            
+            // Загружаем отзывы (это также скроет форму, если отзыв уже есть)
+            loadReviews();
         }
 
         async function handleCheckin() {

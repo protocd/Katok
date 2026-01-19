@@ -10,7 +10,33 @@ async function loadReviews() {
     const container = document.getElementById('reviewsList');
     if (!container) return;
     
-    const reviews = result.data || [];
+    // Проверяем структуру ответа (может быть массив или объект)
+    let reviews = [];
+    let hasUserReview = false;
+    let userReviewId = null;
+    
+    if (Array.isArray(result.data)) {
+        // Старый формат - просто массив отзывов
+        reviews = result.data;
+    } else if (result.data && result.data.reviews) {
+        // Новый формат - объект с reviews, has_user_review, user_review_id
+        reviews = result.data.reviews || [];
+        hasUserReview = result.data.has_user_review || false;
+        userReviewId = result.data.user_review_id || null;
+    } else {
+        reviews = [];
+    }
+    
+    // Скрываем/показываем форму создания отзыва
+    const reviewFormCard = document.querySelector('.card:has(form[onsubmit="handleReviewSubmit(event)"])');
+    if (reviewFormCard) {
+        if (hasUserReview && Auth.isLoggedIn()) {
+            reviewFormCard.style.display = 'none';
+        } else {
+            reviewFormCard.style.display = 'block';
+        }
+    }
+    
     if (reviews.length === 0) {
         container.innerHTML = '<p class="text-muted">Пока нет отзывов</p>';
         return;
@@ -244,6 +270,7 @@ async function saveReviewEdit(e, reviewId) {
     try {
         const result = await API.updateReview(reviewId, data);
         if (result.success) {
+            // Перезагружаем отзывы (форма останется скрытой, т.к. отзыв уже есть)
             loadReviews();
         } else {
             alert('Ошибка: ' + (result.message || result.error || 'Неизвестная ошибка'));
@@ -261,6 +288,7 @@ async function deleteReview(reviewId) {
     try {
         const result = await API.deleteReview(reviewId);
         if (result.success) {
+            // После удаления отзыва форма создания снова появится
             loadReviews();
         } else {
             alert('Ошибка: ' + (result.message || result.error || 'Неизвестная ошибка'));

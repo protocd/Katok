@@ -28,16 +28,30 @@ try {
         
         // Добавляем информацию о том, может ли текущий пользователь редактировать отзыв
         $userId = getCurrentUserId();
+        $userReviewId = null;
+        
         if ($userId) {
             foreach ($reviews as &$rev) {
                 // Получаем user_id из visit
                 $visit = new Visit();
                 $visitData = $visit->getById($rev['visit_id']);
                 $rev['can_edit'] = ($visitData && $visitData['user_id'] == $userId);
+                
+                // Запоминаем ID отзыва текущего пользователя
+                if ($rev['can_edit'] && !$userReviewId) {
+                    $userReviewId = $rev['id'];
+                }
             }
         }
         
-        sendSuccess($reviews);
+        // Добавляем информацию о наличии отзыва пользователя
+        $response = [
+            'reviews' => $reviews,
+            'has_user_review' => $userReviewId !== null,
+            'user_review_id' => $userReviewId
+        ];
+        
+        sendSuccess($response);
     }
     
     // PUT - обновить отзыв
