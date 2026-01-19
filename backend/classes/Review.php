@@ -168,6 +168,111 @@ class Review {
     }
     
     /**
+     * Получить отзыв по visit_id (для проверки, есть ли уже отзыв)
+     */
+    public function getByVisitId($visitId) {
+        $sql = "
+            SELECT r.*, v.user_id, v.rink_id
+            FROM reviews r
+            LEFT JOIN visits v ON r.visit_id = v.id
+            WHERE r.visit_id = ?
+        ";
+        
+        return $this->db->fetchOne($sql, [$visitId]);
+    }
+    
+    /**
+     * Обновить отзыв
+     * 
+     * @param int $reviewId ID отзыва
+     * @param int $userId ID пользователя (для проверки прав)
+     * @param array $data Новые данные отзыва
+     * @return bool true если обновлено
+     */
+    public function update($reviewId, $userId, $data) {
+        // Проверяем права доступа
+        $review = $this->getById($reviewId);
+        
+        if (!$review) {
+            throw new Exception("Отзыв не найден");
+        }
+        
+        // Получаем user_id из visit
+        $visit = $this->db->fetchOne(
+            "SELECT user_id FROM visits WHERE id = ?",
+            [$review['visit_id']]
+        );
+        
+        if (!$visit || $visit['user_id'] != $userId) {
+            throw new Exception("Нет прав на редактирование этого отзыва");
+        }
+        
+        // Валидация
+        if (isset($data['text']) && (empty($data['text']) || strlen($data['text']) < 10)) {
+            throw new Exception("Текст отзыва должен содержать минимум 10 символов");
+        }
+        
+        if (isset($data['rating']) && ($data['rating'] < 1 || $data['rating'] > 5)) {
+            throw new Exception("Рейтинг должен быть от 1 до 5");
+        }
+        
+        // Формируем запрос обновления
+        $updates = [];
+        $params = [];
+        
+        if (isset($data['text'])) {
+            $updates[] = "text = ?";
+            $params[] = $data['text'];
+        }
+        
+        if (isset($data['rating'])) {
+            $updates[] = "rating = ?";
+            $params[] = $data['rating'];
+        }
+        
+        if (isset($data['ice_condition'])) {
+            $validIceConditions = ['excellent', 'good', 'fair', 'poor'];
+            if (in_array($data['ice_condition'], $validIceConditions)) {
+                $updates[] = "ice_condition = ?";
+                $params[] = $data['ice_condition'];
+            } else {
+                $updates[] = "ice_condition = NULL";
+            }
+        }
+        
+        if (isset($data['crowd_level'])) {
+            $validCrowdLevels = ['low', 'medium', 'high'];
+            if (in_array($data['crowd_level'], $validCrowdLevels)) {
+                $updates[] = "crowd_level = ?";
+                $params[] = $data['crowd_level'];
+            } else {
+                $updates[] = "crowd_level = NULL";
+            }
+        }
+        
+        if (isset($data['photo_path'])) {
+            $updates[] = "photo_path = ?";
+            $params[] = $data['photo_path'];
+        }
+        
+        if (isset($data['photo_url'])) {
+            $updates[] = "photo_url = ?";
+            $params[] = $data['photo_url'];
+        }
+        
+        if (empty($updates)) {
+            throw new Exception("Нет данных для обновления");
+        }
+        
+        $params[] = $reviewId;
+        
+        $sql = "UPDATE reviews SET " . implode(', ', $updates) . " WHERE id = ?";
+        $this->db->query($sql, $params);
+        
+        return true;
+    }
+    
+    /**
      * Удалить отзыв (только автор или администратор)
      * 
      * @param int $reviewId ID отзыва
@@ -183,7 +288,17 @@ class Review {
             throw new Exception("Отзыв не найден");
         }
         
-        if (!$isAdmin && $review['user_id'] != $userId) {
+        // Получаем user_id из visit
+        $visit = $this->db->fetchOne(
+            "SELECT user_id FROM visits WHERE id = ?",
+            [$review['visit_id']]
+        );
+        
+        if (!$visit) {
+            throw new Exception("Посещение не найдено");
+        }
+        
+        if (!$isAdmin && $visit['user_id'] != $userId) {
             return false;
         }
         

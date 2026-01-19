@@ -89,6 +89,16 @@ const API = {
         return await this.request('/reviews.php', 'POST', payload);
     },
     
+    async updateReview(reviewId, data) {
+        const payload = { id: reviewId, ...data, _method: 'PUT' };
+        return await this.request('/reviews.php', 'POST', payload);
+    },
+    
+    async deleteReview(reviewId) {
+        const payload = { _method: 'DELETE' };
+        return await this.request('/reviews.php?id=' + reviewId, 'POST', payload);
+    },
+    
     // Чек-ины
     async checkin(rinkId, latitude, longitude) {
         return await this.request('/checkins.php', 'POST', {

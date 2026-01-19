@@ -16,25 +16,38 @@ async function loadReviews() {
         return;
     }
     
+    const currentUser = Auth.getUser();
+    
     let html = '';
     reviews.forEach(review => {
         const score = (review.upvotes_count || 0) - (review.downvotes_count || 0);
         const scoreClass = score > 0 ? 'text-success' : score < 0 ? 'text-danger' : 'text-muted';
+        const canEdit = review.can_edit || false;
         
         html += `
-            <div class="card mb-3">
+            <div class="card mb-3" id="review-${review.id}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
-                        <div>
-                            <h6>Оценка: ${review.rating}/5</h6>
-                            <p>${review.text || ''}</p>
-                            <small class="text-muted">
-                                ${review.ice_condition ? 'Лёд: ' + getIceConditionText(review.ice_condition) : ''}
-                                ${review.ice_condition && review.crowd_level ? ' | ' : ''}
-                                ${review.crowd_level ? 'Загруженность: ' + getCrowdLevelText(review.crowd_level) : ''}
-                            </small>
+                        <div style="flex: 1;">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6>Оценка: ${review.rating}/5</h6>
+                                ${canEdit ? `
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editReview(${review.id})">✏️ Редактировать</button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteReview(${review.id})">🗑️ Удалить</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div id="review-content-${review.id}">
+                                <p>${review.text || ''}</p>
+                                <small class="text-muted">
+                                    ${review.ice_condition ? 'Лёд: ' + getIceConditionText(review.ice_condition) : ''}
+                                    ${review.ice_condition && review.crowd_level ? ' | ' : ''}
+                                    ${review.crowd_level ? 'Загруженность: ' + getCrowdLevelText(review.crowd_level) : ''}
+                                </small>
+                            </div>
                         </div>
-                        <div class="text-end">
+                        <div class="text-end ms-3">
                             <div class="mb-2">
                                 <button class="btn btn-sm btn-outline-success" onclick="vote(${review.id}, 'upvote')">↑</button>
                                 <span class="${scoreClass} mx-2">${score > 0 ? '+' : ''}${score}</span>
@@ -140,5 +153,119 @@ async function vote(reviewId, voteType) {
         loadReviews();
     } else {
         alert(result.message);
+    }
+}
+
+async function editReview(reviewId) {
+    if (!Auth.isLoggedIn()) {
+        alert('Войдите в систему');
+        return;
+    }
+    
+    // Получаем данные отзыва
+    const reviews = await API.getReviews(new URLSearchParams(window.location.search).get('id'));
+    if (!reviews.success) {
+        alert('Ошибка загрузки отзыва');
+        return;
+    }
+    
+    const review = reviews.data.find(r => r.id == reviewId);
+    if (!review) {
+        alert('Отзыв не найден');
+        return;
+    }
+    
+    // Показываем форму редактирования
+    const contentDiv = document.getElementById(`review-content-${reviewId}`);
+    if (!contentDiv) return;
+    
+    contentDiv.innerHTML = `
+        <form onsubmit="saveReviewEdit(event, ${reviewId})">
+            <div class="mb-2">
+                <label class="form-label small">Оценка</label>
+                <select class="form-select form-select-sm" id="edit-rating-${reviewId}" required>
+                    <option value="5" ${review.rating == 5 ? 'selected' : ''}>5 - Отлично</option>
+                    <option value="4" ${review.rating == 4 ? 'selected' : ''}>4 - Хорошо</option>
+                    <option value="3" ${review.rating == 3 ? 'selected' : ''}>3 - Нормально</option>
+                    <option value="2" ${review.rating == 2 ? 'selected' : ''}>2 - Плохо</option>
+                    <option value="1" ${review.rating == 1 ? 'selected' : ''}>1 - Ужасно</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">Состояние льда</label>
+                <select class="form-select form-select-sm" id="edit-ice-${reviewId}">
+                    <option value="">Не указано</option>
+                    <option value="excellent" ${review.ice_condition == 'excellent' ? 'selected' : ''}>Отличное</option>
+                    <option value="good" ${review.ice_condition == 'good' ? 'selected' : ''}>Хорошее</option>
+                    <option value="fair" ${review.ice_condition == 'fair' ? 'selected' : ''}>Среднее</option>
+                    <option value="poor" ${review.ice_condition == 'poor' ? 'selected' : ''}>Плохое</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">Загруженность</label>
+                <select class="form-select form-select-sm" id="edit-crowd-${reviewId}">
+                    <option value="">Не указано</option>
+                    <option value="low" ${review.crowd_level == 'low' ? 'selected' : ''}>Низкая</option>
+                    <option value="medium" ${review.crowd_level == 'medium' ? 'selected' : ''}>Средняя</option>
+                    <option value="high" ${review.crowd_level == 'high' ? 'selected' : ''}>Высокая</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">Текст отзыва</label>
+                <textarea class="form-control form-control-sm" id="edit-text-${reviewId}" rows="3" required>${review.text || ''}</textarea>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">Сохранить</button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEdit(${reviewId})">Отмена</button>
+            </div>
+        </form>
+    `;
+}
+
+function cancelEdit(reviewId) {
+    loadReviews();
+}
+
+async function saveReviewEdit(e, reviewId) {
+    e.preventDefault();
+    
+    const data = {
+        rating: parseInt(document.getElementById(`edit-rating-${reviewId}`).value),
+        text: document.getElementById(`edit-text-${reviewId}`).value.trim(),
+        ice_condition: document.getElementById(`edit-ice-${reviewId}`).value || null,
+        crowd_level: document.getElementById(`edit-crowd-${reviewId}`).value || null
+    };
+    
+    if (!data.text || data.text.length < 10) {
+        alert('Текст отзыва должен содержать минимум 10 символов');
+        return;
+    }
+    
+    try {
+        const result = await API.updateReview(reviewId, data);
+        if (result.success) {
+            loadReviews();
+        } else {
+            alert('Ошибка: ' + (result.message || result.error || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        alert('Ошибка при сохранении: ' + error.message);
+    }
+}
+
+async function deleteReview(reviewId) {
+    if (!confirm('Вы уверены, что хотите удалить этот отзыв?')) {
+        return;
+    }
+    
+    try {
+        const result = await API.deleteReview(reviewId);
+        if (result.success) {
+            loadReviews();
+        } else {
+            alert('Ошибка: ' + (result.message || result.error || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        alert('Ошибка при удалении: ' + error.message);
     }
 }

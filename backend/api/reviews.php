@@ -25,19 +25,136 @@ try {
         }
         
         $reviews = $review->getByRinkId($rinkId);
+        
+        // Добавляем информацию о том, может ли текущий пользователь редактировать отзыв
+        $userId = getCurrentUserId();
+        if ($userId) {
+            foreach ($reviews as &$rev) {
+                // Получаем user_id из visit
+                $visit = new Visit();
+                $visitData = $visit->getById($rev['visit_id']);
+                $rev['can_edit'] = ($visitData && $visitData['user_id'] == $userId);
+            }
+        }
+        
         sendSuccess($reviews);
     }
     
-    // POST - создать отзыв
-    if ($method === 'POST') {
-        requireAuth(); // Требуется авторизация
+    // PUT - обновить отзыв
+    if ($method === 'PUT') {
+        requireAuth();
         
         $input = json_decode(file_get_contents('php://input'), true);
         
+        if (!$input || empty($input['id'])) {
+            sendError('Не указан ID отзыва', 400);
+        }
+        
+        $userId = getCurrentUserId();
+        $reviewId = $input['id'];
+        
+        // Удаляем _method из данных
+        unset($input['_method']);
+        unset($input['id']);
+        
+        try {
+            $review->update($reviewId, $userId, $input);
+            $reviewData = $review->getById($reviewId);
+            sendSuccess($reviewData, 'Отзыв обновлен');
+        } catch (Exception $e) {
+            sendError($e->getMessage(), 403);
+        }
+    }
+    
+    // DELETE - удалить отзыв
+    if ($method === 'DELETE') {
+        requireAuth();
+        
+        $reviewId = $_GET['id'] ?? null;
+        
+        if (!$reviewId) {
+            sendError('Не указан ID отзыва', 400);
+        }
+        
+        $userId = getCurrentUserId();
+        $isAdmin = isAdmin();
+        
+        try {
+            $result = $review->delete($reviewId, $userId, $isAdmin);
+            if ($result) {
+                sendSuccess(null, 'Отзыв удален');
+            } else {
+                sendError('Нет прав на удаление', 403);
+            }
+        } catch (Exception $e) {
+            sendError($e->getMessage(), 400);
+        }
+    }
+    
+    // POST - создать отзыв (или PUT/DELETE через _method)
+    if ($method === 'POST') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        // Если это PUT или DELETE через _method, обрабатываем отдельно
+        if (isset($input['_method'])) {
+            $overrideMethod = strtoupper($input['_method']);
+            if ($overrideMethod === 'PUT') {
+                // Обрабатываем как PUT
+                requireAuth();
+                
+                if (!$input || empty($input['id'])) {
+                    sendError('Не указан ID отзыва', 400);
+                }
+                
+                $userId = getCurrentUserId();
+                $reviewId = $input['id'];
+                
+                // Удаляем _method из данных
+                unset($input['_method']);
+                unset($input['id']);
+                
+                try {
+                    $review->update($reviewId, $userId, $input);
+                    $reviewData = $review->getById($reviewId);
+                    sendSuccess($reviewData, 'Отзыв обновлен');
+                } catch (Exception $e) {
+                    sendError($e->getMessage(), 403);
+                }
+                exit;
+            } else if ($overrideMethod === 'DELETE') {
+                // Обрабатываем как DELETE
+                requireAuth();
+                
+                $reviewId = $_GET['id'] ?? $input['id'] ?? null;
+                
+                if (!$reviewId) {
+                    sendError('Не указан ID отзыва', 400);
+                }
+                
+                $userId = getCurrentUserId();
+                $isAdmin = isAdmin();
+                
+                try {
+                    $result = $review->delete($reviewId, $userId, $isAdmin);
+                    if ($result) {
+                        sendSuccess(null, 'Отзыв удален');
+                    } else {
+                        sendError('Нет прав на удаление', 403);
+                    }
+                } catch (Exception $e) {
+                    sendError($e->getMessage(), 400);
+                }
+                exit;
+            }
+        }
+        
+        // Если это обычный POST (создание отзыва)
+        requireAuth(); // Требуется авторизация
+    
         if (!$input) {
             sendError('Неверный формат данных', 400);
         }
-        
+    
         // Валидация
         if (empty($input['text'])) {
             sendError('Текст отзыва обязателен', 422);
