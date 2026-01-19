@@ -39,10 +39,6 @@ try {
         }
         
         // Валидация
-        if (empty($input['visit_id'])) {
-            sendError('Не указан visit_id', 422);
-        }
-        
         if (empty($input['text'])) {
             sendError('Текст отзыва обязателен', 422);
         }
@@ -52,17 +48,24 @@ try {
         }
         
         $userId = getCurrentUserId();
-        
-        // Проверяем, что visit принадлежит текущему пользователю
         $visit = new Visit();
-        $visitData = $visit->getById($input['visit_id']);
         
-        if (!$visitData || $visitData['user_id'] != $userId) {
-            sendError('Посещение не найдено или не принадлежит вам', 403);
+        // Если visit_id не указан, но указан rink_id - создаем visit автоматически
+        if (empty($input['visit_id']) && !empty($input['rink_id'])) {
+            $visitId = $visit->create($userId, $input['rink_id']);
+        } else if (!empty($input['visit_id'])) {
+            $visitId = $input['visit_id'];
+            // Проверяем, что visit принадлежит текущему пользователю
+            $visitData = $visit->getById($visitId);
+            if (!$visitData || $visitData['user_id'] != $userId) {
+                sendError('Посещение не найдено или не принадлежит вам', 403);
+            }
+        } else {
+            sendError('Не указан visit_id или rink_id', 422);
         }
         
         // Создаем отзыв
-        $reviewId = $review->create($input['visit_id'], $userId, [
+        $reviewId = $review->create($visitId, $userId, [
             'text' => $input['text'],
             'rating' => $input['rating'],
             'ice_condition' => $input['ice_condition'] ?? null,

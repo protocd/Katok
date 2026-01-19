@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Дата и время регистрации',
     last_login TIMESTAMP NULL COMMENT 'Дата и время последнего входа',
     ip_address VARCHAR(45) COMMENT 'IP-адрес пользователя (для отслеживания)',
-    INDEX idx_email (email) COMMENT 'Индекс для быстрого поиска при авторизации'
+    INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
 COMMENT='Таблица пользователей системы';
 
@@ -51,9 +51,9 @@ CREATE TABLE IF NOT EXISTS rinks (
     coverage VARCHAR(50) COMMENT 'Тип покрытия',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Дата добавления в базу',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Дата последнего обновления',
-    INDEX idx_name (name) COMMENT 'Индекс для поиска по названию (живой поиск)',
-    INDEX idx_district (district) COMMENT 'Индекс для фильтрации по району',
-    INDEX idx_location (latitude, longitude) COMMENT 'Составной индекс для геопоиска (формула гаверсинуса)'
+    INDEX idx_name (name),
+    INDEX idx_district (district),
+    INDEX idx_location (latitude, longitude)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
 COMMENT='Таблица катков Москвы (открытые данные Правительства Москвы)';
 
@@ -67,12 +67,12 @@ CREATE TABLE IF NOT EXISTS visits (
     rink_id INT UNSIGNED NOT NULL COMMENT 'ID катка (FK -> rinks.id)',
     visit_date DATE NOT NULL COMMENT 'Дата посещения',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Время создания записи о посещении',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE COMMENT 'Связь с пользователем (каскадное удаление)',
-    FOREIGN KEY (rink_id) REFERENCES rinks(id) ON DELETE CASCADE COMMENT 'Связь с катком (каскадное удаление)',
-    UNIQUE KEY unique_user_rink_date (user_id, rink_id, visit_date) COMMENT 'Один пользователь не может иметь два посещения одного катка в один день',
-    INDEX idx_user_id (user_id) COMMENT 'Индекс для получения посещений пользователя',
-    INDEX idx_rink_id (rink_id) COMMENT 'Индекс для получения посещений катка',
-    INDEX idx_visit_date (visit_date) COMMENT 'Индекс для статистики по датам'
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (rink_id) REFERENCES rinks(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_rink_date (user_id, rink_id, visit_date),
+    INDEX idx_user_id (user_id),
+    INDEX idx_rink_id (rink_id),
+    INDEX idx_visit_date (visit_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
 COMMENT='Таблица посещений (связь пользователь ↔ каток)';
 
@@ -86,8 +86,8 @@ CREATE TABLE IF NOT EXISTS reviews (
     visit_id INT UNSIGNED NOT NULL UNIQUE COMMENT 'ID посещения (FK -> visits.id, один отзыв на одно посещение)',
     text TEXT NOT NULL COMMENT 'Текст отзыва',
     rating TINYINT UNSIGNED NOT NULL COMMENT 'Общий рейтинг катка (1-5)',
-    ice_condition TINYINT UNSIGNED NULL COMMENT 'Оценка состояния льда (1-5)',
-    crowd_level TINYINT UNSIGNED NULL COMMENT 'Оценка загруженности катка (1-5)',
+    ice_condition ENUM('excellent', 'good', 'fair', 'poor') NULL COMMENT 'Состояние льда',
+    crowd_level ENUM('low', 'medium', 'high') NULL COMMENT 'Загруженность катка',
     photo_path VARCHAR(500) NULL COMMENT 'Путь к файлу фотографии на сервере (опционально)',
     photo_url VARCHAR(500) NULL COMMENT 'URL фотографии (если хранится на CDN или внешнем хранилище, опционально)',
     score INT DEFAULT 0 COMMENT 'Рейтинг голосования (upvotes - downvotes, может быть отрицательным)',
@@ -95,13 +95,11 @@ CREATE TABLE IF NOT EXISTS reviews (
     downvotes_count INT UNSIGNED DEFAULT 0 COMMENT 'Количество downvotes (для быстрого доступа)',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Дата создания отзыва',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Дата последнего обновления',
-    FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE COMMENT 'Связь с посещением (каскадное удаление)',
-    INDEX idx_visit_id (visit_id) COMMENT 'Индекс для связи с посещением',
-    INDEX idx_score (score) COMMENT 'Индекс для сортировки по рейтингу голосования',
-    INDEX idx_created_at (created_at) COMMENT 'Индекс для сортировки по дате',
-    CHECK (rating >= 1 AND rating <= 5),
-    CHECK (ice_condition IS NULL OR (ice_condition >= 1 AND ice_condition <= 5)),
-    CHECK (crowd_level IS NULL OR (crowd_level >= 1 AND crowd_level <= 5))
+    FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE,
+    INDEX idx_visit_id (visit_id),
+    INDEX idx_score (score),
+    INDEX idx_created_at (created_at),
+    CHECK (rating >= 1 AND rating <= 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
 COMMENT='Таблица отзывов о катках (привязаны к посещениям, можно прикрепить одно фото)';
 
@@ -118,10 +116,10 @@ CREATE TABLE IF NOT EXISTS checkins (
     distance DECIMAL(10, 2) COMMENT 'Расстояние от пользователя до катка в метрах (формула гаверсинуса)',
     ip_address VARCHAR(45) COMMENT 'IP-адрес пользователя (для защиты от накруток)',
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Время отметки (для статистики и ограничения частоты)',
-    FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE COMMENT 'Связь с посещением (каскадное удаление)',
-    INDEX idx_visit_id (visit_id) COMMENT 'Индекс для получения отметок посещения',
-    INDEX idx_timestamp (timestamp) COMMENT 'Индекс для статистики по времени (группировка по часам, дням)',
-    INDEX idx_ip (ip_address) COMMENT 'Индекс для защиты от накруток (проверка подозрительной активности)'
+    FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE,
+    INDEX idx_visit_id (visit_id),
+    INDEX idx_timestamp (timestamp),
+    INDEX idx_ip (ip_address)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
 COMMENT='Таблица отметок присутствия (привязаны к посещениям, проверка геолокации с радиусом 1 км из-за неточности GPS)';
 
@@ -137,11 +135,11 @@ CREATE TABLE IF NOT EXISTS votes (
     vote_type ENUM('up', 'down') NOT NULL COMMENT 'Тип голоса: upvote или downvote',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Время голосования',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Время изменения голоса (если пользователь изменил голос)',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE COMMENT 'Связь с пользователем (каскадное удаление)',
-    FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE COMMENT 'Связь с отзывом (каскадное удаление при удалении отзыва)',
-    UNIQUE KEY unique_user_review (user_id, review_id) COMMENT 'Один пользователь может проголосовать за отзыв только один раз',
-    INDEX idx_review_id (review_id) COMMENT 'Индекс для подсчета голосов отзыва',
-    INDEX idx_user_id (user_id) COMMENT 'Индекс для получения голосов пользователя'
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_review (user_id, review_id),
+    INDEX idx_review_id (review_id),
+    INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
 COMMENT='Таблица голосов за отзывы (система upvote/downvote, Reddit-style)';
 
@@ -163,12 +161,12 @@ CREATE TABLE IF NOT EXISTS events (
     status ENUM('active', 'cancelled', 'completed') DEFAULT 'active' COMMENT 'Статус мероприятия',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Дата создания мероприятия',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Дата последнего обновления',
-    FOREIGN KEY (rink_id) REFERENCES rinks(id) ON DELETE CASCADE COMMENT 'Связь с катком (каскадное удаление)',
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE COMMENT 'Связь с создателем (каскадное удаление)',
-    INDEX idx_rink_id (rink_id) COMMENT 'Индекс для получения мероприятий катка',
-    INDEX idx_created_by (created_by) COMMENT 'Индекс для получения мероприятий пользователя',
-    INDEX idx_event_date (event_date) COMMENT 'Индекс для фильтрации по дате',
-    INDEX idx_status (status) COMMENT 'Индекс для фильтрации по статусу'
+    FOREIGN KEY (rink_id) REFERENCES rinks(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_rink_id (rink_id),
+    INDEX idx_created_by (created_by),
+    INDEX idx_event_date (event_date),
+    INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
 COMMENT='Таблица мероприятий на катках (создают пользователи, которые уже были на катке)';
 
@@ -183,12 +181,12 @@ CREATE TABLE IF NOT EXISTS event_participants (
     user_id INT UNSIGNED NOT NULL COMMENT 'ID пользователя (FK -> users.id, должен иметь visit для катка мероприятия)',
     status ENUM('confirmed', 'maybe') DEFAULT 'confirmed' COMMENT 'Статус участия: подтвержден или возможно придет',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Дата присоединения к мероприятию',
-    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE COMMENT 'Связь с мероприятием (каскадное удаление)',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE COMMENT 'Связь с пользователем (каскадное удаление)',
-    UNIQUE KEY unique_user_event (user_id, event_id) COMMENT 'Один пользователь может присоединиться к мероприятию только один раз',
-    INDEX idx_event_id (event_id) COMMENT 'Индекс для получения участников мероприятия',
-    INDEX idx_user_id (user_id) COMMENT 'Индекс для получения мероприятий пользователя',
-    INDEX idx_status (status) COMMENT 'Индекс для фильтрации по статусу участия'
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_event (user_id, event_id),
+    INDEX idx_event_id (event_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
 COMMENT='Таблица участников мероприятий (присоединяются пользователи, которые уже были на катке)';
 
@@ -203,11 +201,11 @@ CREATE TABLE IF NOT EXISTS suspicious_activity (
     activity_type ENUM('checkin', 'review', 'visit', 'vote', 'event', 'event_participant') NOT NULL COMMENT 'Тип активности',
     details TEXT COMMENT 'Детали активности (JSON или текстовое описание)',
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Время события',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL COMMENT 'Связь с пользователем (при удалении пользователя записи остаются для анализа)',
-    INDEX idx_user_id (user_id) COMMENT 'Индекс для поиска по пользователю',
-    INDEX idx_ip (ip_address) COMMENT 'Индекс для поиска по IP-адресу',
-    INDEX idx_timestamp (timestamp) COMMENT 'Индекс для фильтрации по времени',
-    INDEX idx_activity_type (activity_type) COMMENT 'Индекс для фильтрации по типу активности'
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_user_id (user_id),
+    INDEX idx_ip (ip_address),
+    INDEX idx_timestamp (timestamp),
+    INDEX idx_activity_type (activity_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
 COMMENT='Таблица логирования подозрительной активности (для защиты от накруток)';
 

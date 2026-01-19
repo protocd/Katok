@@ -40,6 +40,7 @@ function sendError($error, $code = 400, $details = null) {
     
     $response = [
         'success' => false,
+        'message' => $error,
         'error' => $error
     ];
     

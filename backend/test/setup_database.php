@@ -89,10 +89,23 @@ header('Content-Type: text/html; charset=utf-8');
             $pdo->exec("USE rinks_moscow");
             
             // Читаем SQL скрипт
-            $sqlFile = __DIR__ . '/../sql/database_final.sql';
+            // Пробуем разные пути
+            $possiblePaths = [
+                __DIR__ . '/../../sql/database_final.sql',  // Из backend/test в корень/sql
+                __DIR__ . '/../sql/database_final.sql',     // Из backend/test в backend/sql
+                dirname(__DIR__, 2) . '/sql/database_final.sql'  // Абсолютный путь
+            ];
             
-            if (!file_exists($sqlFile)) {
-                throw new Exception("Файл $sqlFile не найден! Проверьте путь к файлу.");
+            $sqlFile = null;
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path)) {
+                    $sqlFile = $path;
+                    break;
+                }
+            }
+            
+            if (!$sqlFile || !file_exists($sqlFile)) {
+                throw new Exception("Файл database_final.sql не найден! Проверенные пути: " . implode(', ', $possiblePaths));
             }
             
             $sql = file_get_contents($sqlFile);

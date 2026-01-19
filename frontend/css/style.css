@@ -1,0 +1,74 @@
+/* Кастомные стили для приложения */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Навигация */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* Карточки катков */
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Поиск */
+#searchResults {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Отзывы */
+.review-card {
+    border-left: 4px solid #007bff;
+}
+
+/* Кнопки */
+.btn {
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    transform: scale(1.05);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .card {
+        margin-bottom: 15px;
+    }
+}
+
+/* Загрузка */
+.loading {
+    text-align: center;
+    padding: 20px;
+}
+
+/* Ошибки */
+.alert {
+    border-radius: 5px;
+}
+
+/* Футер */
+footer {
+    margin-top: auto;
+}

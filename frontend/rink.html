@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каток - Катки Москвы</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">⛸️ Катки Москвы</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="index.html">Назад к списку</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Информация о катке -->
+        <div id="rinkInfo" class="card mb-4">
+            <div class="card-body">
+                <h2 id="rinkName">Загрузка...</h2>
+                <p id="rinkAddress" class="text-muted"></p>
+                <div id="rinkDetails"></div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Отзывы -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Отзывы</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Форма отзыва (только для авторизованных) -->
+                        <div id="reviewForm" class="d-none mb-4">
+                            <h6>Оставить отзыв</h6>
+                            <form onsubmit="handleReviewSubmit(event)">
+                                <div class="mb-3">
+                                    <label class="form-label">Оценка</label>
+                                    <select class="form-select" id="reviewRating" required>
+                                        <option value="5">5 - Отлично</option>
+                                        <option value="4">4 - Хорошо</option>
+                                        <option value="3">3 - Нормально</option>
+                                        <option value="2">2 - Плохо</option>
+                                        <option value="1">1 - Ужасно</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Состояние льда</label>
+                                    <select class="form-select" id="iceCondition">
+                                        <option value="">Не указано</option>
+                                        <option value="excellent">Отличное</option>
+                                        <option value="good">Хорошее</option>
+                                        <option value="fair">Среднее</option>
+                                        <option value="poor">Плохое</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Загруженность</label>
+                                    <select class="form-select" id="crowdLevel">
+                                        <option value="">Не указано</option>
+                                        <option value="low">Низкая</option>
+                                        <option value="medium">Средняя</option>
+                                        <option value="high">Высокая</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Текст отзыва</label>
+                                    <textarea class="form-control" id="reviewText" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Фото (опционально)</label>
+                                    <input type="file" class="form-control" id="reviewPhoto" accept="image/*">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Отправить отзыв</button>
+                            </form>
+                        </div>
+
+                        <!-- Список отзывов -->
+                        <div id="reviewsList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Боковая панель -->
+            <div class="col-md-4">
+                <!-- Чек-ин -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6>Отметка присутствия</h6>
+                        <p class="text-muted small">Отметьтесь, если вы сейчас на катке</p>
+                        <button class="btn btn-success w-100" onclick="handleCheckin()" id="checkinBtn">Я здесь!</button>
+                        <div id="checkinResult" class="mt-2"></div>
+                    </div>
+                </div>
+
+                <!-- События -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6>События</h6>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary btn-sm mb-3" onclick="showCreateEvent()" id="createEventBtn">Создать событие</button>
+                        <div id="eventsList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/reviews.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const rinkId = urlParams.get('id');
+
+        async function loadRink() {
+            const rink = await API.getRink(rinkId);
+            if (rink.success) {
+                const data = rink.data;
+                document.getElementById('rinkName').textContent = data.name;
+                document.getElementById('rinkAddress').textContent = data.address || '';
+                
+                let details = '';
+                if (data.district) details += `<span class="badge bg-secondary">${data.district}</span> `;
+                if (data.is_paid) details += `<span class="badge bg-warning">Платный</span> `;
+                else details += `<span class="badge bg-success">Бесплатный</span> `;
+                if (data.working_hours) details += `<p class="mt-2"><strong>Часы работы:</strong> ${data.working_hours}</p>`;
+                
+                document.getElementById('rinkDetails').innerHTML = details;
+            }
+        }
+
+        async function handleCheckin() {
+            if (!Auth.isLoggedIn()) {
+                alert('Войдите в систему для отметки');
+                return;
+            }
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const result = await API.checkin(rinkId, position.coords.latitude, position.coords.longitude);
+                    document.getElementById('checkinResult').innerHTML = 
+                        result.success ? '<div class="alert alert-success">Отмечено!</div>' : 
+                        '<div class="alert alert-danger">' + result.message + '</div>';
+                });
+            } else {
+                alert('Геолокация не поддерживается');
+            }
+        }
+
+        async function showCreateEvent() {
+            const title = prompt('Название события:');
+            if (!title) return;
+            
+            const description = prompt('Описание:');
+            const date = prompt('Дата (YYYY-MM-DD):');
+            const time = prompt('Время (HH:MM):');
+            
+            const result = await API.createEvent(rinkId, title, description, date, time);
+            if (result.success) {
+                loadEvents();
+            } else {
+                alert(result.message);
+            }
+        }
+
+        async function loadEvents() {
+            const events = await API.getEvents(rinkId);
+            if (events.success) {
+                let html = '';
+                events.data.forEach(event => {
+                    html += `<div class="card mb-2">
+                        <div class="card-body">
+                            <h6>${event.title}</h6>
+                            <p class="small">${event.description || ''}</p>
+                            <p class="small text-muted">${event.event_date} ${event.event_time}</p>
+                            <button class="btn btn-sm btn-primary" onclick="joinEvent(${event.id})">Присоединиться</button>
+                        </div>
+                    </div>`;
+                });
+                document.getElementById('eventsList').innerHTML = html || '<p class="text-muted">Нет событий</p>';
+            }
+        }
+
+        async function joinEvent(eventId) {
+            const result = await API.joinEvent(eventId);
+            alert(result.success ? 'Вы присоединились!' : result.message);
+            loadEvents();
+        }
+
+        // Инициализация после загрузки страницы
+        window.addEventListener('load', () => {
+            if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+                const reviewForm = document.getElementById('reviewForm');
+                if (reviewForm) {
+                    reviewForm.classList.remove('d-none');
+                }
+            }
+            
+            if (rinkId) {
+                loadRink();
+                if (typeof loadReviews === 'function') {
+                    loadReviews();
+                }
+                loadEvents();
+            }
+        });
+    </script>
+</body>
+</html>

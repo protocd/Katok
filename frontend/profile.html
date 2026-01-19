@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль - Катки Москвы</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">⛸️ Катки Москвы</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="index.html">Главная</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h2>Мой профиль</h2>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>Информация</h5>
+                        <p><strong>Имя:</strong> <span id="userName"></span></p>
+                        <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                        <p><strong>Дата регистрации:</strong> <span id="userCreated"></span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>Статистика</h5>
+                        <p><strong>Посещений катков:</strong> <span id="visitsCount">0</span></p>
+                        <p><strong>Оставлено отзывов:</strong> <span id="reviewsCount">0</span></p>
+                        <p><strong>Создано событий:</strong> <span id="eventsCount">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <h4>Мои отзывы</h4>
+            <div id="myReviews"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        async function loadProfile() {
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const user = await API.getCurrentUser();
+            if (user.success) {
+                const data = user.data;
+                document.getElementById('userName').textContent = data.name;
+                document.getElementById('userEmail').textContent = data.email;
+                if (data.created_at) {
+                    document.getElementById('userCreated').textContent = new Date(data.created_at).toLocaleDateString('ru-RU');
+                }
+            }
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>

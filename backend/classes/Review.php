@@ -78,11 +78,13 @@ class Review {
             throw new Exception("Рейтинг должен быть от 1 до 5");
         }
         
-        // Опциональные поля
-        $iceCondition = isset($data['ice_condition']) && $data['ice_condition'] >= 1 && $data['ice_condition'] <= 5 
+        // Опциональные поля (ENUM значения)
+        $validIceConditions = ['excellent', 'good', 'fair', 'poor'];
+        $iceCondition = isset($data['ice_condition']) && in_array($data['ice_condition'], $validIceConditions)
             ? $data['ice_condition'] : null;
         
-        $crowdLevel = isset($data['crowd_level']) && $data['crowd_level'] >= 1 && $data['crowd_level'] <= 5 
+        $validCrowdLevels = ['low', 'medium', 'high'];
+        $crowdLevel = isset($data['crowd_level']) && in_array($data['crowd_level'], $validCrowdLevels)
             ? $data['crowd_level'] : null;
         
         $photoPath = $data['photo_path'] ?? null;
