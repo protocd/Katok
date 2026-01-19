@@ -31,16 +31,18 @@ try {
     require_once __DIR__ . '/../../classes/Visit.php';
     require_once __DIR__ . '/../../classes/Review.php';
     require_once __DIR__ . '/../../classes/Event.php';
+    require_once __DIR__ . '/../../classes/Database.php';
     
     $visit = new Visit();
     $review = new Review();
     $event = new Event();
+    $db = Database::getInstance();
     
     $userId = getCurrentUserId();
     
     // Количество посещений (только с успешными чек-инами)
     // Считаем только те visits, у которых есть хотя бы один успешный checkin
-    $visitsResult = $this->db->fetchOne(
+    $visitsResult = $db->fetchOne(
         "SELECT COUNT(DISTINCT v.id) as count 
          FROM visits v
          INNER JOIN checkins c ON v.id = c.visit_id
