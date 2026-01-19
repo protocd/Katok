@@ -126,9 +126,16 @@ class Review {
      */
     public function getAverageIceCondition($rinkId) {
         $result = $this->db->fetchOne(
-            "SELECT AVG(ice_condition) as avg_condition, COUNT(*) as count 
-             FROM reviews 
-             WHERE rink_id = ? AND ice_condition IS NOT NULL",
+            "SELECT AVG(CASE 
+                WHEN r.ice_condition = 'excellent' THEN 5
+                WHEN r.ice_condition = 'good' THEN 4
+                WHEN r.ice_condition = 'fair' THEN 3
+                WHEN r.ice_condition = 'poor' THEN 2
+                ELSE NULL
+            END) as avg_condition, COUNT(*) as count 
+             FROM reviews r
+             LEFT JOIN visits v ON r.visit_id = v.id
+             WHERE v.rink_id = ? AND r.ice_condition IS NOT NULL",
             [$rinkId]
         );
         
@@ -143,9 +150,15 @@ class Review {
      */
     public function getAverageCrowdLevel($rinkId) {
         $result = $this->db->fetchOne(
-            "SELECT AVG(crowd_level) as avg_level, COUNT(*) as count 
-             FROM reviews 
-             WHERE rink_id = ? AND crowd_level IS NOT NULL",
+            "SELECT AVG(CASE 
+                WHEN r.crowd_level = 'high' THEN 5
+                WHEN r.crowd_level = 'medium' THEN 3
+                WHEN r.crowd_level = 'low' THEN 1
+                ELSE NULL
+            END) as avg_level, COUNT(*) as count 
+             FROM reviews r
+             LEFT JOIN visits v ON r.visit_id = v.id
+             WHERE v.rink_id = ? AND r.crowd_level IS NOT NULL",
             [$rinkId]
         );
         
