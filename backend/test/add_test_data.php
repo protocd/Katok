@@ -36,7 +36,8 @@ header('Content-Type: text/html; charset=utf-8');
             // Проверяем, есть ли уже данные
             $count = $conn->query("SELECT COUNT(*) FROM rinks")->fetchColumn();
             if ($count > 0) {
-                echo "<p class='error'>⚠️ В базе уже есть $count катков. Пропускаем добавление.</p>";
+                echo "<p class='info'>ℹ️ В базе уже есть $count катков.</p>";
+                echo "<p><a href='import_moscow_data.php'>Добавить больше катков из открытых данных</a></p>";
             } else {
                 // Добавляем тестовые катки
                 $rinks = [
