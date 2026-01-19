@@ -129,4 +129,19 @@ class Event {
         
         return true;
     }
+    
+    /**
+     * Получить количество созданных пользователем событий
+     * 
+     * @param int $userId ID пользователя
+     * @return int Количество событий
+     */
+    public function getCountByUserId($userId) {
+        $result = $this->db->fetchOne(
+            "SELECT COUNT(*) as count FROM events WHERE created_by = ?",
+            [$userId]
+        );
+        
+        return (int)$result['count'];
+    }
 }

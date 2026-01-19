@@ -100,4 +100,16 @@ class Visit {
         
         return (int)$result['count'];
     }
+    
+    /**
+     * Получить общее количество посещений пользователя
+     */
+    public function getCountByUserId($userId) {
+        $result = $this->db->fetchOne(
+            "SELECT COUNT(*) as count FROM visits WHERE user_id = ?",
+            [$userId]
+        );
+        
+        return (int)$result['count'];
+    }
 }

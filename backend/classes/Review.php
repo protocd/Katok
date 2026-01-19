@@ -173,11 +173,55 @@ class Review {
      */
     public function getCount($rinkId) {
         $result = $this->db->fetchOne(
-            "SELECT COUNT(*) as count FROM reviews WHERE rink_id = ?",
+            "SELECT COUNT(*) as count 
+             FROM reviews r
+             LEFT JOIN visits v ON r.visit_id = v.id
+             WHERE v.rink_id = ?",
             [$rinkId]
         );
         
         return (int)$result['count'];
+    }
+    
+    /**
+     * Получить количество отзывов пользователя
+     * 
+     * @param int $userId ID пользователя
+     * @return int Количество отзывов
+     */
+    public function getCountByUserId($userId) {
+        $result = $this->db->fetchOne(
+            "SELECT COUNT(*) as count 
+             FROM reviews r
+             LEFT JOIN visits v ON r.visit_id = v.id
+             WHERE v.user_id = ?",
+            [$userId]
+        );
+        
+        return (int)$result['count'];
+    }
+    
+    /**
+     * Получить отзывы пользователя
+     * 
+     * @param int $userId ID пользователя
+     * @return array Список отзывов
+     */
+    public function getByUserId($userId) {
+        $sql = "
+            SELECT 
+                r.*,
+                rink.name as rink_name,
+                rink.address as rink_address,
+                v.visit_date
+            FROM reviews r
+            LEFT JOIN visits v ON r.visit_id = v.id
+            LEFT JOIN rinks rink ON v.rink_id = rink.id
+            WHERE v.user_id = ?
+            ORDER BY r.created_at DESC
+        ";
+        
+        return $this->db->fetchAll($sql, [$userId]);
     }
     
     /**

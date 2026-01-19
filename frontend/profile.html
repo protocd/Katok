@@ -63,11 +63,47 @@
             const user = await API.getCurrentUser();
             if (user.success) {
                 const data = user.data;
-                document.getElementById('userName').textContent = data.name;
-                document.getElementById('userEmail').textContent = data.email;
+                
+                // Заполняем информацию о пользователе
+                document.getElementById('userName').textContent = data.name || 'Не указано';
+                document.getElementById('userEmail').textContent = data.email || 'Не указано';
                 if (data.created_at) {
                     document.getElementById('userCreated').textContent = new Date(data.created_at).toLocaleDateString('ru-RU');
+                } else {
+                    document.getElementById('userCreated').textContent = 'Не указано';
                 }
+                
+                // Заполняем статистику
+                if (data.stats) {
+                    document.getElementById('visitsCount').textContent = data.stats.visits || 0;
+                    document.getElementById('reviewsCount').textContent = data.stats.reviews || 0;
+                    document.getElementById('eventsCount').textContent = data.stats.events || 0;
+                }
+                
+                // Загружаем отзывы пользователя
+                if (data.reviews && data.reviews.length > 0) {
+                    let html = '';
+                    data.reviews.forEach(review => {
+                        html += `
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6><a href="rink.html?id=${review.rink_id || ''}">${review.rink_name || 'Каток'}</a></h6>
+                                    <p><strong>Оценка:</strong> ${review.rating}/5</p>
+                                    <p>${review.text || ''}</p>
+                                    <small class="text-muted">
+                                        ${review.visit_date ? 'Дата посещения: ' + new Date(review.visit_date).toLocaleDateString('ru-RU') : ''}
+                                        ${review.created_at ? ' | Оставлен: ' + new Date(review.created_at).toLocaleDateString('ru-RU') : ''}
+                                    </small>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    document.getElementById('myReviews').innerHTML = html;
+                } else {
+                    document.getElementById('myReviews').innerHTML = '<p class="text-muted">У вас пока нет отзывов</p>';
+                }
+            } else {
+                alert('Ошибка загрузки профиля: ' + (user.message || 'Неизвестная ошибка'));
             }
         }
 
