@@ -62,8 +62,19 @@ class Checkin {
         );
         
         if ($distance > self::MAX_DISTANCE_METERS) {
+            // Форматируем расстояние для отображения
+            if ($distance >= 1000) {
+                $distanceFormatted = round($distance / 1000, 1) . " км";
+            } else {
+                $distanceFormatted = round($distance) . " м";
+            }
+            
+            $maxDistanceFormatted = self::MAX_DISTANCE_METERS >= 1000 
+                ? round(self::MAX_DISTANCE_METERS / 1000, 1) . " км" 
+                : self::MAX_DISTANCE_METERS . " м";
+            
             throw new Exception("Вы находитесь слишком далеко от катка. Расстояние: " . 
-                              round($distance) . " м (максимум " . self::MAX_DISTANCE_METERS . " м). " .
+                              $distanceFormatted . " (максимум " . $maxDistanceFormatted . "). " .
                               "Убедитесь, что GPS включен и вы находитесь на катке.");
         }
         

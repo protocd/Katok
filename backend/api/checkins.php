@@ -85,8 +85,19 @@ try {
         
         $maxDistance = defined('CHECKIN_MAX_DISTANCE') ? CHECKIN_MAX_DISTANCE : 1000;
         if ($distance > $maxDistance) {
+            // Форматируем расстояние для отображения
+            if ($distance >= 1000) {
+                $distanceFormatted = round($distance / 1000, 1) . " км";
+            } else {
+                $distanceFormatted = round($distance) . " м";
+            }
+            
+            $maxDistanceFormatted = $maxDistance >= 1000 
+                ? round($maxDistance / 1000, 1) . " км" 
+                : $maxDistance . " м";
+            
             sendError("Вы находитесь слишком далеко от катка. Расстояние: " . 
-                      round($distance) . " м (максимум " . $maxDistance . " м). " .
+                      $distanceFormatted . " (максимум " . $maxDistanceFormatted . "). " .
                       "Убедитесь, что GPS включен и вы находитесь на катке.", 400);
         }
         
