@@ -38,8 +38,16 @@ try {
     
     $userId = getCurrentUserId();
     
-    // Количество посещений
-    $visitsCount = $visit->getCountByUserId($userId);
+    // Количество посещений (только с успешными чек-инами)
+    // Считаем только те visits, у которых есть хотя бы один успешный checkin
+    $visitsResult = $this->db->fetchOne(
+        "SELECT COUNT(DISTINCT v.id) as count 
+         FROM visits v
+         INNER JOIN checkins c ON v.id = c.visit_id
+         WHERE v.user_id = ?",
+        [$userId]
+    );
+    $visitsCount = (int)($visitsResult['count'] ?? 0);
     
     // Количество отзывов
     $reviewsCount = $review->getCountByUserId($userId);

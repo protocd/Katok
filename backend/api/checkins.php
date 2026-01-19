@@ -61,7 +61,41 @@ try {
         $longitude = (float)$input['longitude'];
         $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
         
-        // Создаем или получаем visit для сегодня
+        // Сначала проверяем геолокацию БЕЗ создания visit
+        // Получаем координаты катка
+        require_once __DIR__ . '/../classes/Rink.php';
+        $rink = new Rink();
+        $rinkData = $rink->getById($rinkId);
+        
+        if (!$rinkData) {
+            sendError('Каток не найден', 404);
+        }
+        
+        if (!$rinkData['latitude'] || !$rinkData['longitude']) {
+            sendError('Координаты катка не указаны', 400);
+        }
+        
+        // Проверяем расстояние до катка
+        $distance = $checkin->calculateDistance(
+            $latitude,
+            $longitude,
+            $rinkData['latitude'],
+            $rinkData['longitude']
+        );
+        
+        $maxDistance = defined('CHECKIN_MAX_DISTANCE') ? CHECKIN_MAX_DISTANCE : 1000;
+        if ($distance > $maxDistance) {
+            sendError("Вы находитесь слишком далеко от катка. Расстояние: " . 
+                      round($distance) . " м (максимум " . $maxDistance . " м). " .
+                      "Убедитесь, что GPS включен и вы находитесь на катке.", 400);
+        }
+        
+        // Проверяем cooldown
+        if (!$checkin->canCheckin($userId, $rinkId)) {
+            sendError("Вы уже отметили присутствие на этом катке недавно. Подождите час.", 400);
+        }
+        
+        // Только если все проверки пройдены - создаем visit и checkin
         $visit = new Visit();
         $visitId = $visit->create($userId, $rinkId);
         
