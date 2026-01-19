@@ -200,15 +200,9 @@
 
         // Инициализация после загрузки страницы
         window.addEventListener('load', () => {
-            if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
-                const reviewForm = document.getElementById('reviewForm');
-                if (reviewForm) {
-                    reviewForm.classList.remove('d-none');
-                }
-            }
-            
             if (rinkId) {
                 loadRink();
+                // loadReviews() вызывается внутри loadRink()
                 if (typeof loadReviews === 'function') {
                     loadReviews();
                 }
