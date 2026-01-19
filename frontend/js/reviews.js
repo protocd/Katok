@@ -28,12 +28,17 @@ async function loadReviews() {
     }
     
     // Скрываем/показываем форму создания отзыва
-    const reviewFormCard = document.querySelector('.card:has(form[onsubmit="handleReviewSubmit(event)"])');
-    if (reviewFormCard) {
+    const reviewForm = document.getElementById('reviewForm');
+    if (reviewForm) {
         if (hasUserReview && Auth.isLoggedIn()) {
-            reviewFormCard.style.display = 'none';
+            // Если у пользователя уже есть отзыв - скрываем форму
+            reviewForm.classList.add('d-none');
+        } else if (Auth.isLoggedIn()) {
+            // Если пользователь авторизован и отзыва нет - показываем форму
+            reviewForm.classList.remove('d-none');
         } else {
-            reviewFormCard.style.display = 'block';
+            // Если не авторизован - скрываем форму
+            reviewForm.classList.add('d-none');
         }
     }
     
