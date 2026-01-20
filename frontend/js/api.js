@@ -46,7 +46,10 @@ const API = {
         let url = '/rinks.php?';
         if (filters.search) url += 'search=' + encodeURIComponent(filters.search) + '&';
         if (filters.district) url += 'district=' + encodeURIComponent(filters.district) + '&';
-        if (filters.is_paid !== undefined) url += 'is_paid=' + filters.is_paid + '&';
+        if (filters.is_paid !== undefined) url += 'is_paid=' + (filters.is_paid ? '1' : '0') + '&';
+        if (filters.has_equipment_rental !== undefined) url += 'has_equipment_rental=' + (filters.has_equipment_rental ? '1' : '0') + '&';
+        if (filters.has_locker_room !== undefined) url += 'has_locker_room=' + (filters.has_locker_room ? '1' : '0') + '&';
+        if (filters.has_cafe !== undefined) url += 'has_cafe=' + (filters.has_cafe ? '1' : '0') + '&';
         return await this.request(url);
     },
     

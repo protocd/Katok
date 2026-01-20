@@ -30,6 +30,10 @@ try {
     $rinkId = $_GET['id'] ?? null;
     $district = $_GET['district'] ?? null;
     $search = $_GET['search'] ?? null;
+    $isPaid = isset($_GET['is_paid']) ? $_GET['is_paid'] : null;
+    $hasEquipmentRental = isset($_GET['has_equipment_rental']) ? $_GET['has_equipment_rental'] : null;
+    $hasLockerRoom = isset($_GET['has_locker_room']) ? $_GET['has_locker_room'] : null;
+    $hasCafe = isset($_GET['has_cafe']) ? $_GET['has_cafe'] : null;
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
     $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
     
@@ -56,6 +60,18 @@ try {
     $filters = [];
     if ($district) {
         $filters['district'] = $district;
+    }
+    if ($isPaid !== null && $isPaid !== '') {
+        $filters['is_paid'] = $isPaid === '1' || $isPaid === 'true' || $isPaid === true;
+    }
+    if ($hasEquipmentRental !== null && $hasEquipmentRental !== '') {
+        $filters['has_equipment_rental'] = $hasEquipmentRental === '1' || $hasEquipmentRental === 'true' || $hasEquipmentRental === true;
+    }
+    if ($hasLockerRoom !== null && $hasLockerRoom !== '') {
+        $filters['has_locker_room'] = $hasLockerRoom === '1' || $hasLockerRoom === 'true' || $hasLockerRoom === true;
+    }
+    if ($hasCafe !== null && $hasCafe !== '') {
+        $filters['has_cafe'] = $hasCafe === '1' || $hasCafe === 'true' || $hasCafe === true;
     }
     
     // Получаем катки с фильтрами
