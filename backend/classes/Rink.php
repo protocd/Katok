@@ -66,6 +66,18 @@ class Rink {
             $params[] = $filters['is_disabled_accessible'] ? 1 : 0;
         }
         
+        // Фильтр по банкомату
+        if (isset($filters['has_atm'])) {
+            $sql .= " AND has_atm = ?";
+            $params[] = $filters['has_atm'] ? 1 : 0;
+        }
+        
+        // Фильтр по медпункту
+        if (isset($filters['has_medpoint'])) {
+            $sql .= " AND has_medpoint = ?";
+            $params[] = $filters['has_medpoint'] ? 1 : 0;
+        }
+        
         // Сортировка по названию
         $sql .= " ORDER BY name ASC";
         
@@ -212,7 +224,40 @@ class Rink {
             $params[] = $filters['is_paid'] ? 1 : 0;
         }
         
-        // ... остальные фильтры (можно упростить, но для читаемости оставим)
+        if (isset($filters['has_equipment_rental'])) {
+            $sql .= " AND has_equipment_rental = ?";
+            $params[] = $filters['has_equipment_rental'] ? 1 : 0;
+        }
+        
+        if (isset($filters['has_locker_room'])) {
+            $sql .= " AND has_locker_room = ?";
+            $params[] = $filters['has_locker_room'] ? 1 : 0;
+        }
+        
+        if (isset($filters['has_cafe'])) {
+            $sql .= " AND has_cafe = ?";
+            $params[] = $filters['has_cafe'] ? 1 : 0;
+        }
+        
+        if (isset($filters['has_wifi'])) {
+            $sql .= " AND has_wifi = ?";
+            $params[] = $filters['has_wifi'] ? 1 : 0;
+        }
+        
+        if (isset($filters['has_atm'])) {
+            $sql .= " AND has_atm = ?";
+            $params[] = $filters['has_atm'] ? 1 : 0;
+        }
+        
+        if (isset($filters['has_medpoint'])) {
+            $sql .= " AND has_medpoint = ?";
+            $params[] = $filters['has_medpoint'] ? 1 : 0;
+        }
+        
+        if (isset($filters['is_disabled_accessible'])) {
+            $sql .= " AND is_disabled_accessible = ?";
+            $params[] = $filters['is_disabled_accessible'] ? 1 : 0;
+        }
         
         $result = $this->db->fetchOne($sql, $params);
         return (int)$result['count'];

@@ -47,9 +47,19 @@ const API = {
         if (filters.search) url += 'search=' + encodeURIComponent(filters.search) + '&';
         if (filters.district) url += 'district=' + encodeURIComponent(filters.district) + '&';
         if (filters.is_paid !== undefined) url += 'is_paid=' + (filters.is_paid ? '1' : '0') + '&';
-        if (filters.has_equipment_rental !== undefined) url += 'has_equipment_rental=' + (filters.has_equipment_rental ? '1' : '0') + '&';
-        if (filters.has_locker_room !== undefined) url += 'has_locker_room=' + (filters.has_locker_room ? '1' : '0') + '&';
-        if (filters.has_cafe !== undefined) url += 'has_cafe=' + (filters.has_cafe ? '1' : '0') + '&';
+        
+        // Все дополнительные фильтры оборудования
+        const equipmentParams = [
+            'has_equipment_rental', 'has_locker_room', 'has_cafe', 
+            'has_wifi', 'has_atm', 'has_medpoint', 'is_disabled_accessible'
+        ];
+        
+        equipmentParams.forEach(param => {
+            if (filters[param] === true) {
+                url += param + '=1&';
+            }
+        });
+        
         return await this.request(url);
     },
     

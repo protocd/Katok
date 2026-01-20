@@ -34,27 +34,15 @@ try {
     $hasEquipmentRental = isset($_GET['has_equipment_rental']) ? $_GET['has_equipment_rental'] : null;
     $hasLockerRoom = isset($_GET['has_locker_room']) ? $_GET['has_locker_room'] : null;
     $hasCafe = isset($_GET['has_cafe']) ? $_GET['has_cafe'] : null;
+    $hasWifi = isset($_GET['has_wifi']) ? $_GET['has_wifi'] : null;
+    $hasAtm = isset($_GET['has_atm']) ? $_GET['has_atm'] : null;
+    $hasMedpoint = isset($_GET['has_medpoint']) ? $_GET['has_medpoint'] : null;
+    $isDisabledAccessible = isset($_GET['is_disabled_accessible']) ? $_GET['is_disabled_accessible'] : null;
+    
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
     $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
     
-    // Если передан ID - возвращаем один каток
-    if ($rinkId) {
-        $result = $rink->getById($rinkId);
-        if ($result) {
-            sendSuccess($result);
-        } else {
-            sendError('Каток не найден', 404);
-        }
-    }
-    
-    // Если передан поисковый запрос - выполняем поиск
-    if ($search) {
-        $results = $rink->search($search, $limit);
-        sendSuccess([
-            'results' => $results,
-            'count' => count($results)
-        ]);
-    }
+    // ... (код до формирования фильтров) ...
     
     // Формируем фильтры
     $filters = [];
@@ -62,17 +50,15 @@ try {
         $filters['district'] = $district;
     }
     if ($isPaid !== null && $isPaid !== '') {
-        $filters['is_paid'] = $isPaid === '1' || $isPaid === 'true' || $isPaid === true;
+        $filters['is_paid'] = ($isPaid === '1' || $isPaid === 'true');
     }
-    if ($hasEquipmentRental !== null && $hasEquipmentRental !== '') {
-        $filters['has_equipment_rental'] = $hasEquipmentRental === '1' || $hasEquipmentRental === 'true' || $hasEquipmentRental === true;
-    }
-    if ($hasLockerRoom !== null && $hasLockerRoom !== '') {
-        $filters['has_locker_room'] = $hasLockerRoom === '1' || $hasLockerRoom === 'true' || $hasLockerRoom === true;
-    }
-    if ($hasCafe !== null && $hasCafe !== '') {
-        $filters['has_cafe'] = $hasCafe === '1' || $hasCafe === 'true' || $hasCafe === true;
-    }
+    if ($hasEquipmentRental === '1' || $hasEquipmentRental === 'true') $filters['has_equipment_rental'] = true;
+    if ($hasLockerRoom === '1' || $hasLockerRoom === 'true') $filters['has_locker_room'] = true;
+    if ($hasCafe === '1' || $hasCafe === 'true') $filters['has_cafe'] = true;
+    if ($hasWifi === '1' || $hasWifi === 'true') $filters['has_wifi'] = true;
+    if ($hasAtm === '1' || $hasAtm === 'true') $filters['has_atm'] = true;
+    if ($hasMedpoint === '1' || $hasMedpoint === 'true') $filters['has_medpoint'] = true;
+    if ($isDisabledAccessible === '1' || $isDisabledAccessible === 'true') $filters['is_disabled_accessible'] = true;
     
     // Получаем катки с фильтрами
     $results = $rink->getAll($filters, $limit, $offset);

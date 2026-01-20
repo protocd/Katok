@@ -59,44 +59,40 @@ async function loadRinksOnMap(filters = {}) {
 }
 
 // Применить фильтры
+let filterTimeout;
 function applyFilters() {
-    const filters = {};
-    
-    // Поиск
-    const search = document.getElementById('searchInput')?.value.trim();
-    if (search) {
-        filters.search = search;
-    }
-    
-    // Район
-    const district = document.getElementById('districtFilter')?.value;
-    if (district) {
-        filters.district = district;
-    }
-    
-    // Тип (платный/бесплатный)
-    const paid = document.getElementById('paidFilter')?.value;
-    if (paid !== '') {
-        filters.is_paid = paid === '1';
-    }
-    
-    // Оборудование
-    const equipment = document.getElementById('equipmentFilter')?.value;
-    if (equipment) {
-        if (equipment === 'rental') {
-            filters.has_equipment_rental = true;
-        } else if (equipment === 'locker') {
-            filters.has_locker_room = true;
-        } else if (equipment === 'cafe') {
-            filters.has_cafe = true;
-        }
-    }
-    
-    currentFilters = filters;
-    
-    // Обновляем карту и список
-    loadRinksOnMap(filters);
-    loadRinksForMap(filters);
+    // Используем debounce (задержку), чтобы не спамить API при вводе текста
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(async () => {
+        const filters = {};
+        
+        // Поиск
+        const search = document.getElementById('searchInput')?.value.trim();
+        if (search) filters.search = search;
+        
+        // Район
+        const district = document.getElementById('districtFilter')?.value;
+        if (district) filters.district = district;
+        
+        // Тип
+        const paid = document.getElementById('paidFilter')?.value;
+        if (paid !== '') filters.is_paid = paid === '1';
+        
+        // Чекбоксы оборудования
+        if (document.getElementById('filter_rental')?.checked) filters.has_equipment_rental = true;
+        if (document.getElementById('filter_locker')?.checked) filters.has_locker_room = true;
+        if (document.getElementById('filter_cafe')?.checked) filters.has_cafe = true;
+        if (document.getElementById('filter_wifi')?.checked) filters.has_wifi = true;
+        if (document.getElementById('filter_atm')?.checked) filters.has_atm = true;
+        if (document.getElementById('filter_medpoint')?.checked) filters.has_medpoint = true;
+        if (document.getElementById('filter_disabled')?.checked) filters.is_disabled_accessible = true;
+        
+        currentFilters = filters;
+        
+        // Обновляем карту и список моментально
+        await loadRinksOnMap(filters);
+        await loadRinksForMap(filters);
+    }, 300); // Задержка 300мс
 }
 
 // Сбросить фильтры
@@ -104,7 +100,14 @@ function resetFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('districtFilter').value = '';
     document.getElementById('paidFilter').value = '';
-    document.getElementById('equipmentFilter').value = '';
+    
+    // Сбрасываем все чекбоксы
+    const checkboxes = ['filter_rental', 'filter_locker', 'filter_cafe', 'filter_wifi', 'filter_atm', 'filter_medpoint', 'filter_disabled'];
+    checkboxes.forEach(id => {
+        const cb = document.getElementById(id);
+        if (cb) cb.checked = false;
+    });
+    
     applyFilters();
 }
 

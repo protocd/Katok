@@ -57,44 +57,69 @@
         <!-- Поиск и фильтры -->
         <div class="row mb-4">
             <div class="col-md-12">
-                <div class="card">
+                <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="row">
+                        <div class="row g-3">
                             <!-- Поиск -->
                             <div class="col-md-4">
-                                <label class="form-label">Поиск</label>
+                                <label class="form-label fw-bold">Поиск</label>
                                 <input type="text" class="form-control" id="searchInput" placeholder="Название или адрес..." oninput="applyFilters()">
                             </div>
                             <!-- Район -->
-                            <div class="col-md-2">
-                                <label class="form-label">Район</label>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Район</label>
                                 <select class="form-select" id="districtFilter" onchange="applyFilters()">
                                     <option value="">Все районы</option>
                                 </select>
                             </div>
                             <!-- Тип -->
                             <div class="col-md-2">
-                                <label class="form-label">Тип</label>
+                                <label class="form-label fw-bold">Тип</label>
                                 <select class="form-select" id="paidFilter" onchange="applyFilters()">
                                     <option value="">Все</option>
                                     <option value="0">Бесплатные</option>
                                     <option value="1">Платные</option>
                                 </select>
                             </div>
-                            <!-- Оборудование -->
-                            <div class="col-md-2">
-                                <label class="form-label">Оборудование</label>
-                                <select class="form-select" id="equipmentFilter" onchange="applyFilters()">
-                                    <option value="">Все</option>
-                                    <option value="rental">С прокатом</option>
-                                    <option value="locker">С раздевалкой</option>
-                                    <option value="cafe">С кафе</option>
-                                </select>
-                            </div>
                             <!-- Кнопка сброса -->
-                            <div class="col-md-2">
-                                <label class="form-label">&nbsp;</label>
-                                <button class="btn btn-secondary w-100" onclick="resetFilters()">Сбросить</button>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">Сбросить всё</button>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold mb-2">Удобства и оборудование:</label>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="filter_rental" onchange="applyFilters()">
+                                        <label class="form-check-label" for="filter_rental">Прокат</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="filter_locker" onchange="applyFilters()">
+                                        <label class="form-check-label" for="filter_locker">Раздевалка</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="filter_cafe" onchange="applyFilters()">
+                                        <label class="form-check-label" for="filter_cafe">Кафе</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="filter_wifi" onchange="applyFilters()">
+                                        <label class="form-check-label" for="filter_wifi">Wi-Fi</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="filter_atm" onchange="applyFilters()">
+                                        <label class="form-check-label" for="filter_atm">Банкомат</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="filter_medpoint" onchange="applyFilters()">
+                                        <label class="form-check-label" for="filter_medpoint">Медпункт</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="filter_disabled" onchange="applyFilters()">
+                                        <label class="form-check-label" for="filter_disabled">Доступная среда</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
