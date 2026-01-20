@@ -34,11 +34,26 @@ try {
     }
     
     $rinkId = $eventData['rink_id'];
+    $eventId = $input['event_id'];
     
-    // Присоединяемся
-    $event->join($input['event_id'], $userId, $rinkId);
+    // Проверяем, является ли пользователь уже участником
+    $isParticipant = $event->isParticipant($eventId, $userId);
     
-    sendSuccess([], 'Вы присоединились к мероприятию');
+    if ($isParticipant) {
+        // Покидаем мероприятие
+        $event->leave($eventId, $userId);
+        $message = 'Вы покинули мероприятие';
+    } else {
+        // Присоединяемся
+        $event->join($eventId, $userId, $rinkId);
+        $message = 'Вы присоединились к мероприятию';
+    }
+    
+    // Возвращаем обновленную информацию о событии
+    $updatedEvent = $event->getById($eventId);
+    $updatedEvent['is_participant'] = !$isParticipant; // Теперь участник (или не участник)
+    
+    sendSuccess($updatedEvent, $message);
     
 } catch (Exception $e) {
     sendError($e->getMessage(), 400);

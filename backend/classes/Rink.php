@@ -11,6 +11,13 @@ class Rink {
     public function __construct() {
         $this->db = Database::getInstance();
     }
+
+    /**
+     * Обновляет метку времени синхронизации
+     */
+    public function updateSyncTime($rinkId) {
+        $this->db->query("UPDATE rinks SET last_sync = CURRENT_TIMESTAMP WHERE id = ?", [$rinkId]);
+    }
     
     /**
      * Получить все катки с фильтрацией
@@ -20,10 +27,18 @@ class Rink {
      * @param int $offset Смещение для пагинации
      * @return array Список катков
      */
-    public function getAll($filters = [], $limit = 100, $offset = 0) {
+    public function getAll($filters = [], $limit = 2000, $offset = 0) {
         $sql = "SELECT * FROM rinks WHERE 1=1";
         $params = [];
         
+        // Поиск по названию или адресу
+        if (!empty($filters['search'])) {
+            $sql .= " AND (name LIKE ? OR address LIKE ?)";
+            $searchParam = "%" . $filters['search'] . "%";
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+        }
+
         // Фильтр по району
         if (!empty($filters['district'])) {
             $sql .= " AND district = ?";
@@ -214,6 +229,13 @@ class Rink {
         $params = [];
         
         // Применяем те же фильтры, что и в getAll
+        if (!empty($filters['search'])) {
+            $sql .= " AND (name LIKE ? OR address LIKE ?)";
+            $searchParam = "%" . $filters['search'] . "%";
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+        }
+
         if (!empty($filters['district'])) {
             $sql .= " AND district = ?";
             $params[] = $filters['district'];

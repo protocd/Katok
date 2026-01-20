@@ -1,10 +1,5 @@
 <?php
-/**
- * API для голосования за отзывы
- * POST /api/votes.php - проголосовать за отзыв (требуется авторизация)
- * DELETE /api/votes.php?review_id={id} - отменить голос
- */
-
+// API для голосования за отзывы
 require_once __DIR__ . '/../includes/cors.php';
 require_once __DIR__ . '/../includes/response.php';
 require_once __DIR__ . '/../includes/auth.php';
@@ -13,12 +8,11 @@ require_once __DIR__ . '/../classes/Vote.php';
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 try {
-    requireAuth(); // Требуется авторизация для всех операций
+    requireAuth();
     
     $vote = new Vote();
     $userId = getCurrentUserId();
     
-    // POST - проголосовать
     if ($method === 'POST') {
         $input = json_decode(file_get_contents('php://input'), true);
         
@@ -30,11 +24,12 @@ try {
             sendError('Не указан review_id', 422);
         }
         
-        if (empty($input['vote_type']) || !in_array($input['vote_type'], ['up', 'down'])) {
+        $voteType = $input['vote_type'] ?? null;
+        if (empty($voteType) || !in_array($voteType, ['up', 'down'], true)) {
             sendError('vote_type должен быть "up" или "down"', 422);
         }
         
-        $voteId = $vote->vote($userId, $input['review_id'], $input['vote_type']);
+        $voteId = $vote->vote($userId, $input['review_id'], $voteType);
         
         sendSuccess(['vote_id' => $voteId], 'Голос учтен');
     }

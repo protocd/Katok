@@ -80,11 +80,21 @@ async function loadReviews() {
                         </div>
                         <div class="text-end ms-3">
                             <div class="mb-2">
-                                <button class="btn btn-sm btn-outline-success" onclick="vote(${review.id}, 'upvote')">↑</button>
+                                <button class="btn btn-sm btn-outline-success" onclick="vote(${review.id}, 'up')">↑</button>
                                 <span class="${scoreClass} mx-2">${score > 0 ? '+' : ''}${score}</span>
-                                <button class="btn btn-sm btn-outline-danger" onclick="vote(${review.id}, 'downvote')">↓</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="vote(${review.id}, 'down')">↓</button>
                             </div>
-                            ${review.photo_url ? `<img src="${review.photo_url}" class="img-thumbnail" style="max-width: 100px;">` : ''}
+                            ${review.photo_url ? `
+                                <div class="mt-2">
+                                    <img src="${review.photo_url}" 
+                                         class="img-thumbnail" 
+                                         style="max-width: 200px; max-height: 200px; object-fit: cover; cursor: pointer;"
+                                         onclick="window.open('${review.photo_url}', '_blank')"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                                         alt="Фото отзыва">
+                                    <div style="display: none; color: red; font-size: 0.8em;">Ошибка загрузки фото</div>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -154,9 +164,17 @@ async function handleReviewSubmit(e) {
     
     const photoInput = document.getElementById('reviewPhoto');
     if (photoInput && photoInput.files.length > 0) {
-        // Загрузка фото (упрощенная версия - просто сохраняем путь)
-        reviewData.photo_path = 'uploads/reviews/' + Date.now() + '_' + photoInput.files[0].name;
-        reviewData.photo_url = reviewData.photo_path; // В реальном проекте здесь будет загрузка на сервер
+        try {
+            const uploadResult = await API.uploadPhoto(photoInput.files[0]);
+            
+            if (uploadResult.success && uploadResult.data && uploadResult.data.url) {
+                reviewData.photo_url = uploadResult.data.url;
+            } else {
+                alert('Ошибка загрузки фото: ' + (uploadResult.message || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка при загрузке фото: ' + error.message);
+        }
     }
     
     try {
@@ -179,36 +197,66 @@ async function vote(reviewId, voteType) {
         return;
     }
     
-    const result = await API.vote(reviewId, voteType);
-    if (result.success) {
-        loadReviews();
-    } else {
-        alert(result.message);
+    if (voteType === 'upvote') voteType = 'up';
+    if (voteType === 'downvote') voteType = 'down';
+    
+    if (voteType !== 'up' && voteType !== 'down') {
+        alert('Ошибка: неверный тип голоса');
+        return;
+    }
+    
+    try {
+        const result = await API.vote(reviewId, voteType);
+        if (result.success) {
+            loadReviews();
+        } else {
+            alert('Ошибка: ' + (result.message || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        alert('Ошибка при голосовании: ' + error.message);
     }
 }
 
 async function editReview(reviewId) {
-    if (!Auth.isLoggedIn()) {
-        alert('Войдите в систему');
-        return;
-    }
-    
-    // Получаем данные отзыва
-    const reviews = await API.getReviews(new URLSearchParams(window.location.search).get('id'));
-    if (!reviews.success) {
-        alert('Ошибка загрузки отзыва');
-        return;
-    }
-    
-    const review = reviews.data.find(r => r.id == reviewId);
-    if (!review) {
-        alert('Отзыв не найден');
-        return;
-    }
-    
-    // Показываем форму редактирования
-    const contentDiv = document.getElementById(`review-content-${reviewId}`);
-    if (!contentDiv) return;
+    try {
+        if (!Auth.isLoggedIn()) {
+            alert('Войдите в систему');
+            return;
+        }
+        
+        // Получаем данные отзыва
+        const urlParams = new URLSearchParams(window.location.search);
+        const rinkId = urlParams.get('id');
+        if (!rinkId) {
+            alert('Ошибка: не указан ID катка');
+            return;
+        }
+        
+        const reviewsResult = await API.getReviews(rinkId);
+        if (!reviewsResult.success) {
+            alert('Ошибка загрузки отзыва: ' + (reviewsResult.message || 'Неизвестная ошибка'));
+            return;
+        }
+        
+        // Обрабатываем структуру ответа (может быть массив или объект)
+        let reviews = [];
+        if (Array.isArray(reviewsResult.data)) {
+            reviews = reviewsResult.data;
+        } else if (reviewsResult.data && reviewsResult.data.reviews) {
+            reviews = reviewsResult.data.reviews || [];
+        }
+        
+        const review = reviews.find(r => r.id == reviewId);
+        if (!review) {
+            alert('Отзыв не найден');
+            return;
+        }
+        
+        const contentDiv = document.getElementById(`review-content-${reviewId}`);
+        if (!contentDiv) {
+            alert('Ошибка: элемент формы не найден');
+            return;
+        }
     
     contentDiv.innerHTML = `
         <form onsubmit="saveReviewEdit(event, ${reviewId})">
@@ -251,6 +299,9 @@ async function editReview(reviewId) {
             </div>
         </form>
     `;
+    } catch (error) {
+        alert('Ошибка при редактировании отзыва: ' + error.message);
+    }
 }
 
 function cancelEdit(reviewId) {
@@ -302,3 +353,11 @@ async function deleteReview(reviewId) {
         alert('Ошибка при удалении: ' + error.message);
     }
 }
+
+// Делаем функции доступными глобально для вызова из HTML
+window.editReview = editReview;
+window.deleteReview = deleteReview;
+window.saveReviewEdit = saveReviewEdit;
+window.cancelEdit = cancelEdit;
+window.vote = vote;
+window.handleReviewSubmit = handleReviewSubmit;

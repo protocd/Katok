@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html class="notranslate" translate="no" prefix="og: http://ogp.me/ns#" data-critters-container>
+<head>
+  <meta charset="UTF-8">
+  <link rel="shortcut icon" type="image/x-icon" href="/assets/img/logo_100.png">
+  <meta name="google" content="notranslate">
+  <meta name="google-site-verification" content="nyN3q18qWqaEqyyM32j8Pg-IJiGcYg9B9RWEd1OZ0mw">
+  <meta name="yandex-verification" content="a63f7d345486875f">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="wmail-verification" content="6edef17ca091babbc2d8b555533b8ada">
+  <meta name="title" content="Портал открытых данных Правительства Москвы">
+  <meta name="description" content="На портале опубликовано более 1000 наборов данных и справочников, в которых представлены сведения по различным направлениям: от объектов городской инфраструктуры до расписаний ближайших мероприятий, проводимых в городе Москва">
+  <meta property="og:title" content="Портал открытых данных Правительства Москвы">
+  <meta property="og:description" content="На портале опубликовано более 1000 наборов данных и справочников, в которых представлены сведения по различным направлениям: от объектов городской инфраструктуры до расписаний ближайших мероприятий, проводимых в городе Москва">
+  <meta property="og:image" content="https://data.mos.ru/assets/img/logo_100.png">
+  <meta property="og:url" content="https://data.mos.ru">
+  <meta property="og:type" content="website">
+  <title>Портал открытых данных Правительства Москвы</title>
+  <base href="/">
+<style>@charset "UTF-8";:root{--white-100-color:#000000;--white-72-color:#474747;--white-56-color:#707070;--white-24-color:#c2c2c2;--white-12-color:#e0e0e0;--white-0-color:#ffffff;--black-100-color:#ffffff;--black-72-color:#e0e0e0;--black-56-color:#c2c2c2;--black-24-color:#707070;--black-12-color:#474747;--black-0-color:#000000;--blue-100-color:#065075;--blue-72-color:#4b809b;--blue-56-color:#739db1;--blue-24-color:#92bbd2;--blue-12-color:#a8cce0;--blue-0-color:#bfddef;--cream-100-color:#5e574f;--cream-72-color:#8a8580;--cream-56-color:#a4a09c;--cream-24-color:#b2b0a5;--cream-12-color:#cecbbe;--cream-0-color:#eae7d8;--brown-green-100-color:#94e21a;--brown-green-72-color:#82c717;--brown-green-56-color:#71ac14;--brown-green-24-color:#6a5b4e;--brown-green-12-color:#534132;--brown-green-0-color:#3b2716;--current-100-color:var(--white-100-color);--current-72-color:var(--white-72-color);--current-56-color:var(--white-56-color);--current-24-color:var(--white-24-color);--current-12-color:var(--white-12-color);--current-0-color:var(--white-0-color);--font-arial:Arial;--font-times-new-roman:Times New Roman;--normal-letter-spacing:0px;--medium-letter-spacing:1px;--big-letter-spacing:2px;--current-letter-spacing:var(--normal-letter-spacing);--button-padding:11px;--side-padding:32px;--root-font-size:10px;--root-font-family:var(--font-arial);--root-letter-spacing:normal;--text-decoration-thickness:2px;--small-size:32px;--medium-size:40px;--big-size:56px;--big-big-size:59px}@media screen and (max-width: 768px){:root{--side-padding:5px;--button-padding:2px;--text-decoration-thickness:.7px;--small-size:16px;--medium-size:20px;--big-size:28px;--big-big-size:31px}}.mat-typography{font:400 14px/20px Roboto,Helvetica Neue,sans-serif;letter-spacing:normal}:root{--toolbar-height:75px;--data-filters-height:64px;--paginator-height:48px;--static-table-min-width:250px;--mat-checkbox-size:16px;--mat-checkbox-margin-right:8px;--scrollbar-width:8px;--scrollbar-height:8px;--mat-900:#10255a;--mat-800:#10255a;--mat-700:#3c5b9c;--mat-600:#698cce;--mat-500:#698cce;--mat-400:#a0bfee;--mat-300:#cfdff6;--mat-200:#cfdff6;--mat-100:#cfdff6;--mat-50:#cfdff6;--primary-70-color:#10255a;--primary-60-color:#3c5b9c;--primary-50-color:#698cce;--primary-40-color:#a0bfee;--primary-30-color:#cfdff6;--primary-70-32-color:#10255a52;--secondary-70-color:#0e0e0f;--secondary-60-color:#3c3e41;--secondary-50-color:#696c71;--secondary-40-color:#b7bbb2;--secondary-30-color:#e6e3df;--secondary-20-color:#eeeff2;--secondary-10-color:#f3f5f7;--secondary-0-color:#ffffff;--negative-color:#aa0000;--neutral-color:#ffaa00;--positive-color:#008844;--blue-gradient:linear-gradient(103deg, #10265a 0%, #3c5b9c 100%) 0 0 no-repeat padding-box;--mosru-primary-color:#e51740;--mosru-primary-hover-color:#cc0029;--mosru-primary-active-color:#a10020;--mosru-secondary-color:#fff}html,body{overflow-y:hidden!important}html,body,app-root{height:100%}body{margin:0;font-family:Roboto,sans-serif}#letterSize{display:inline;position:absolute;opacity:0;text-align:left;font:14px/20px Roboto;letter-spacing:0;padding:8px}@font-face{font-family:Roboto;font-style:normal;font-weight:300;src:url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-300.eot);src:local(""),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-300.eot?#iefix) format("embedded-opentype"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-300.woff2) format("woff2"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-300.woff) format("woff"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-300.ttf) format("truetype"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-300.svg#Roboto) format("svg")}@font-face{font-family:Roboto;font-style:normal;font-weight:400;src:url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-regular.eot);src:local(""),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-regular.eot?#iefix) format("embedded-opentype"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-regular.woff2) format("woff2"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-regular.woff) format("woff"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-regular.ttf) format("truetype"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-regular.svg#Roboto) format("svg")}@font-face{font-family:Roboto;font-style:normal;font-weight:500;src:url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-500.eot);src:local(""),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-500.eot?#iefix) format("embedded-opentype"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-500.woff2) format("woff2"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-500.woff) format("woff"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-500.ttf) format("truetype"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-500.svg#Roboto) format("svg")}@font-face{font-family:Roboto;font-style:normal;font-weight:700;src:url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-700.eot);src:local(""),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-700.eot?#iefix) format("embedded-opentype"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-700.woff2) format("woff2"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-700.woff) format("woff"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-700.ttf) format("truetype"),url(/assets/fonts/roboto-v29-latin-ext_latin_cyrillic-ext_cyrillic-700.svg#Roboto) format("svg")}</style><link rel="stylesheet" href="styles.dd669d0feac34811.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="styles.dd669d0feac34811.css"></noscript></head>
+<body class="mat-typography">
+<div style="pointer-events: none" id="letterSize"></div>
+<app-root></app-root>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+  (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+  (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+  ym(92310769, "init", {
+    clickmap:true,
+    trackLinks:true,
+    accurateTrackBounce:true
+  });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/92310769" style="position:absolute; left:-9999px;" alt></div></noscript>
+<!-- /Yandex.Metrika counter -->
+<!-- stats.mos.ru -->
+<script type="text/javascript" id="statsmosru" src="https://stats.mos.ru/counter.js" onload="statsMosRuCounter()" defer="defer" async="true"></script>
+<!-- ======= -->
+<script src="runtime.c6da29b55f7605ed.js" type="module"></script><script src="polyfills.27bf52c4981e76ff.js" type="module"></script><script src="scripts.50416158d2404f91.js" defer></script><script src="main.28eee721cb3b7dc2.js" type="module"></script></body>
+</html>

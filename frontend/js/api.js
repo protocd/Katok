@@ -6,19 +6,22 @@ const API = {
     async request(endpoint, method = 'GET', data = null) {
         const options = {
             method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: {}
         };
         
-        if (data) {
+        // Для DELETE и GET не отправляем Content-Type, если нет данных
+        if (data || (method !== 'GET' && method !== 'DELETE')) {
+            options.headers['Content-Type'] = 'application/json';
+        }
+        
+        // Для DELETE не отправляем body
+        if (data && method !== 'DELETE') {
             options.body = JSON.stringify(data);
         }
         
         try {
             const response = await fetch(this.baseUrl + endpoint, options);
             
-            // Проверяем, что ответ JSON
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 const text = await response.text();
@@ -30,7 +33,6 @@ const API = {
             
             const result = await response.json();
             
-            // Если ответ не успешный, но есть message или error
             if (!result.success && !result.message && result.error) {
                 result.message = result.error;
             }
@@ -65,6 +67,10 @@ const API = {
     
     async getRink(id) {
         return await this.request('/rinks.php?id=' + id);
+    },
+
+    async findOptimalRink(coordinates) {
+        return await this.request('/rinks.php?action=group', 'POST', { coordinates });
     },
     
     // Авторизация
@@ -121,6 +127,14 @@ const API = {
         });
     },
     
+    async getCheckins(rinkId, hours = 24) {
+        return await this.request(`/checkins.php?rink_id=${rinkId}&hours=${hours}`);
+    },
+    
+    async getUserVisitCount(rinkId) {
+        return await this.request(`/checkins.php?rink_id=${rinkId}&user_visits=1`);
+    },
+    
     // Голосование
     async vote(reviewId, voteType) {
         return await this.request('/votes.php', 'POST', {
@@ -132,6 +146,10 @@ const API = {
     // События
     async getEvents(rinkId) {
         return await this.request('/events.php?rink_id=' + rinkId);
+    },
+    
+    async getEventDetails(eventId) {
+        return await this.request('/events.php?id=' + eventId);
     },
     
     async createEvent(rinkId, title, description, eventDate, eventTime) {
@@ -148,8 +166,35 @@ const API = {
         return await this.request('/events/join.php', 'POST', { event_id: eventId });
     },
     
+    async deleteEvent(eventId) {
+        return await this.request(`/events.php?id=${eventId}`, 'DELETE');
+    },
+    
     // Статистика
     async getStats(rinkId) {
         return await this.request('/stats.php?rink_id=' + rinkId);
+    },
+    
+    // Загрузка фото
+    async uploadPhoto(file) {
+        const formData = new FormData();
+        formData.append('photo', file);
+        
+        try {
+            const response = await fetch(this.baseUrl + '/upload.php', {
+                method: 'POST',
+                body: formData
+                // Не устанавливаем Content-Type — браузер сам установит с boundary
+            });
+            return await response.json();
+        } catch (error) {
+            return { success: false, message: 'Ошибка загрузки: ' + error.message };
+        }
+    },
+    
+    // Поиск катков для подсказок
+    async searchRinks(query) {
+        if (!query || query.length < 2) return { success: true, data: [] };
+        return await this.request('/rinks.php?search=' + encodeURIComponent(query) + '&limit=10');
     }
 };

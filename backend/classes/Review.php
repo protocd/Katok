@@ -1,8 +1,5 @@
 <?php
-/**
- * Класс для работы с отзывами о катках
- */
-
+// Работа с отзывами
 require_once __DIR__ . '/Database.php';
 
 class Review {
@@ -12,14 +9,6 @@ class Review {
         $this->db = Database::getInstance();
     }
     
-    /**
-     * Получить все отзывы о катке
-     * 
-     * @param int $rinkId ID катка
-     * @param int $limit Лимит записей
-     * @param int $offset Смещение для пагинации
-     * @return array Список отзывов с данными пользователей
-     */
     public function getByRinkId($rinkId, $limit = 50, $offset = 0) {
         $sql = "
             SELECT 
@@ -37,12 +26,6 @@ class Review {
         return $this->db->fetchAll($sql, [$rinkId, $limit, $offset]);
     }
     
-    /**
-     * Получить отзыв по ID
-     * 
-     * @param int $reviewId ID отзыва
-     * @return array|null Данные отзыва или null
-     */
     public function getById($reviewId) {
         $sql = "
             SELECT 
@@ -59,17 +42,7 @@ class Review {
         return $this->db->fetchOne($sql, [$reviewId]);
     }
     
-    /**
-     * Создать отзыв
-     * 
-     * @param int $visitId ID посещения
-     * @param int $userId ID пользователя (для проверки)
-     * @param array $data Данные отзыва (text, rating, ice_condition, crowd_level, photo_path, photo_url)
-     * @return int ID созданного отзыва
-     * @throws Exception Если ошибка валидации
-     */
     public function create($visitId, $userId, $data) {
-        // Валидация
         if (empty($data['text']) || strlen($data['text']) < 10) {
             throw new Exception("Текст отзыва должен содержать минимум 10 символов");
         }
@@ -78,7 +51,6 @@ class Review {
             throw new Exception("Рейтинг должен быть от 1 до 5");
         }
         
-        // Опциональные поля (ENUM значения)
         $validIceConditions = ['excellent', 'good', 'fair', 'poor'];
         $iceCondition = isset($data['ice_condition']) && in_array($data['ice_condition'], $validIceConditions)
             ? $data['ice_condition'] : null;
@@ -90,7 +62,6 @@ class Review {
         $photoPath = $data['photo_path'] ?? null;
         $photoUrl = $data['photo_url'] ?? null;
         
-        // Вставляем отзыв в базу данных
         $reviewId = $this->db->insert(
             "INSERT INTO reviews (visit_id, text, rating, ice_condition, crowd_level, photo_path, photo_url) 
              VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -100,12 +71,6 @@ class Review {
         return $reviewId;
     }
     
-    /**
-     * Получить средний рейтинг катка
-     * 
-     * @param int $rinkId ID катка
-     * @return float Средний рейтинг (от 1 до 5) или 0 если отзывов нет
-     */
     public function getAverageRating($rinkId) {
         $result = $this->db->fetchOne(
             "SELECT AVG(r.rating) as avg_rating, COUNT(*) as count 
@@ -211,6 +176,7 @@ class Review {
         $sql = "
             SELECT 
                 r.*,
+                v.rink_id,
                 rink.name as rink_name,
                 rink.address as rink_address,
                 v.visit_date

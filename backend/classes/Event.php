@@ -1,8 +1,5 @@
 <?php
-/**
- * Класс для работы с мероприятиями
- */
-
+// Работа с мероприятиями
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/Visit.php';
 
@@ -13,9 +10,6 @@ class Event {
         $this->db = Database::getInstance();
     }
     
-    /**
-     * Создать мероприятие
-     */
     public function create($rinkId, $userId, $data) {
         $eventId = $this->db->insert(
             "INSERT INTO events (rink_id, created_by, title, description, event_date, event_time, max_participants) 
@@ -34,9 +28,6 @@ class Event {
         return $eventId;
     }
     
-    /**
-     * Получить мероприятие по ID с участниками
-     */
     public function getById($eventId) {
         $event = $this->db->fetchOne(
             "SELECT e.*, r.name as rink_name, u.name as creator_name
@@ -48,7 +39,6 @@ class Event {
         );
         
         if ($event) {
-            // Получаем участников
             $event['participants'] = $this->getParticipants($eventId);
             $event['participants_count'] = count($event['participants']);
         }
@@ -56,9 +46,6 @@ class Event {
         return $event;
     }
     
-    /**
-     * Получить мероприятия катка
-     */
     public function getByRinkId($rinkId) {
         return $this->db->fetchAll(
             "SELECT e.*, u.name as creator_name,
@@ -71,9 +58,6 @@ class Event {
         );
     }
     
-    /**
-     * Получить участников мероприятия
-     */
     public function getParticipants($eventId) {
         return $this->db->fetchAll(
             "SELECT ep.*, u.name as user_name
@@ -85,17 +69,12 @@ class Event {
         );
     }
     
-    /**
-     * Присоединиться к мероприятию
-     */
     public function join($eventId, $userId, $rinkId) {
-        // Проверка: был ли пользователь на катке
         $visit = new Visit();
         if (!$visit->hasVisited($userId, $rinkId)) {
             throw new Exception("Вы должны сначала посетить этот каток, чтобы присоединиться к мероприятию");
         }
         
-        // Проверка лимита участников
         $event = $this->getById($eventId);
         if ($event['max_participants']) {
             $currentCount = $this->db->fetchOne(
@@ -108,7 +87,6 @@ class Event {
             }
         }
         
-        // Присоединяемся
         $this->db->insert(
             "INSERT INTO event_participants (event_id, user_id, status) VALUES (?, ?, 'confirmed')
              ON DUPLICATE KEY UPDATE status = 'confirmed'",
@@ -118,9 +96,6 @@ class Event {
         return true;
     }
     
-    /**
-     * Покинуть мероприятие
-     */
     public function leave($eventId, $userId) {
         $this->db->query(
             "DELETE FROM event_participants WHERE event_id = ? AND user_id = ?",
@@ -130,12 +105,6 @@ class Event {
         return true;
     }
     
-    /**
-     * Получить количество созданных пользователем событий
-     * 
-     * @param int $userId ID пользователя
-     * @return int Количество событий
-     */
     public function getCountByUserId($userId) {
         $result = $this->db->fetchOne(
             "SELECT COUNT(*) as count FROM events WHERE created_by = ?",
@@ -143,5 +112,19 @@ class Event {
         );
         
         return (int)$result['count'];
+    }
+    
+    public function delete($eventId) {
+        $this->db->query("DELETE FROM event_participants WHERE event_id = ?", [$eventId]);
+        $this->db->query("DELETE FROM events WHERE id = ?", [$eventId]);
+        return true;
+    }
+    
+    public function isParticipant($eventId, $userId) {
+        $result = $this->db->fetchOne(
+            "SELECT COUNT(*) as count FROM event_participants WHERE event_id = ? AND user_id = ? AND status = 'confirmed'",
+            [$eventId, $userId]
+        );
+        return (int)$result['count'] > 0;
     }
 }

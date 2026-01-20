@@ -84,16 +84,24 @@
                 if (data.reviews && data.reviews.length > 0) {
                     let html = '';
                     data.reviews.forEach(review => {
+                        // Формируем ссылку на каток, если есть rink_id
+                        const rinkLink = review.rink_id 
+                            ? `<a href="rink.html?id=${review.rink_id}" class="text-decoration-none">${review.rink_name || 'Каток'}</a>`
+                            : `<span>${review.rink_name || 'Каток (не указан)'}</span>`;
+                        
                         html += `
                             <div class="card mb-3">
                                 <div class="card-body">
-                                    <h6><a href="rink.html?id=${review.rink_id || ''}">${review.rink_name || 'Каток'}</a></h6>
+                                    <h6>${rinkLink}</h6>
+                                    ${review.rink_address ? `<p class="text-muted small mb-2">${review.rink_address}</p>` : ''}
                                     <p><strong>Оценка:</strong> ${review.rating}/5</p>
                                     <p>${review.text || ''}</p>
-                                    <small class="text-muted">
-                                        ${review.visit_date ? 'Дата посещения: ' + new Date(review.visit_date).toLocaleDateString('ru-RU') : ''}
-                                        ${review.created_at ? ' | Оставлен: ' + new Date(review.created_at).toLocaleDateString('ru-RU') : ''}
-                                    </small>
+                                    ${review.photo_url ? `<img src="${review.photo_url}" class="img-thumbnail mt-2" style="max-width: 150px; max-height: 150px; object-fit: cover;" alt="Фото отзыва">` : ''}
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            ${review.created_at ? 'Оставлен: ' + new Date(review.created_at).toLocaleDateString('ru-RU') : ''}
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
                         `;

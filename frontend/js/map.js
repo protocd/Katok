@@ -1,18 +1,38 @@
 // Работа с Яндекс.Картами
 let map;
-let placemarks = [];
-let currentFilters = {};
+let clusterer;
 
 async function initMap() {
     if (typeof ymaps === 'undefined') {
-        console.error('Yandex Maps API не загружен');
         return;
     }
     
     ymaps.ready(() => {
+        const mapElement = document.getElementById('map');
+        if (!mapElement) return;
+
         map = new ymaps.Map('map', {
-            center: [55.751244, 37.618423], // Москва
-            zoom: 10
+            center: [55.751244, 37.618423],
+            zoom: 10,
+            controls: ['zoomControl', 'typeSelector', 'fullscreenControl', 'geolocationControl']
+        });
+        
+        clusterer = new ymaps.Clusterer({
+            clusterIconLayout: 'default#pieChart',
+            clusterIconPieChartRadius: 25,
+            clusterIconPieChartCoreRadius: 15,
+            clusterIconPieChartStrokeWidth: 3,
+            
+            // Альтернативный вариант - простые кружки с числами:
+            // preset: 'islands#invertedDarkBlueClusterIcons',
+            
+            // Группировка близких меток
+            groupByCoordinates: false,
+            clusterDisableClickZoom: false,
+            clusterHideIconOnBalloonOpen: false,
+            geoObjectHideIconOnBalloonOpen: false,
+            minClusterSize: 3,
+            gridSize: 80
         });
         
         loadRinksOnMap();
@@ -20,151 +40,94 @@ async function initMap() {
 }
 
 async function loadRinksOnMap(filters = {}) {
+    if (!map || !clusterer) return;
+
     const result = await API.getRinks(filters);
-    if (!result.success || !map) return;
+    if (!result.success) return;
     
-    // Удаляем старые метки
-    placemarks.forEach(pm => map.geoObjects.remove(pm));
-    placemarks = [];
+    clusterer.removeAll();
+    map.geoObjects.remove(clusterer);
     
     const rinks = result.data.results || [];
+    const placemarks = [];
+    
     rinks.forEach(rink => {
         if (rink.latitude && rink.longitude) {
             const placemark = new ymaps.Placemark(
                 [rink.latitude, rink.longitude],
                 {
-                    balloonContent: `<b>${rink.name}</b><br>${rink.address || ''}<br><a href="rink.html?id=${rink.id}">Подробнее</a>`,
-                    hintContent: rink.name
+                    // Данные для балуна (всплывающее окно при клике)
+                    balloonContentHeader: `<strong>${rink.name}</strong>`,
+                    balloonContentBody: `
+                        <div style="max-width: 250px;">
+                            <p style="margin: 5px 0; color: #666;">${rink.address || 'Адрес не указан'}</p>
+                            <p style="margin: 5px 0;">
+                                <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; 
+                                    background: ${rink.is_paid ? '#ffc107' : '#28a745'}; color: ${rink.is_paid ? '#000' : '#fff'};">
+                                    ${rink.is_paid ? 'Платный' : 'Бесплатно'}
+                                </span>
+                            </p>
+                            <p style="margin: 5px 0; font-size: 12px; color: #888;">
+                                ${rink.district || ''}
+                            </p>
+                        </div>
+                    `,
+                    balloonContentFooter: `<a href="rink.html?id=${rink.id}" style="color: #007bff;">Подробнее →</a>`,
+                    hintContent: rink.name,
+                    // Для статистики кластера
+                    clusterCaption: rink.name,
+                    rinkData: rink // Сохраняем данные катка
                 },
                 {
-                    preset: rink.is_paid ? 'islands#blueIcon' : 'islands#greenIcon'
+                    // Иконка: зеленая для бесплатных, синяя для платных
+                    preset: rink.is_paid ? 'islands#blueCircleDotIcon' : 'islands#greenCircleDotIcon'
                 }
             );
             
-            placemark.events.add('click', () => {
-                window.location.href = `rink.html?id=${rink.id}`;
-            });
-            
-            map.geoObjects.add(placemark);
             placemarks.push(placemark);
         }
     });
     
+    // Добавляем все метки в кластеризатор
+    clusterer.add(placemarks);
+    
+    // Добавляем кластеризатор на карту
+    map.geoObjects.add(clusterer);
+    
+    // Подстраиваем масштаб под все метки
     if (placemarks.length > 0) {
-        map.setBounds(map.geoObjects.getBounds());
-    } else {
-        // Если нет катков, показываем сообщение
-        map.setCenter([55.751244, 37.618423], 10);
+        map.setBounds(clusterer.getBounds(), {
+            checkZoomRange: true,
+            zoomMargin: 40
+        });
     }
 }
 
-// Применить фильтры
-let filterTimeout;
-function applyFilters() {
-    // Используем debounce (задержку), чтобы не спамить API при вводе текста
-    clearTimeout(filterTimeout);
-    filterTimeout = setTimeout(async () => {
-        const filters = {};
-        
-        // Поиск
-        const search = document.getElementById('searchInput')?.value.trim();
-        if (search) filters.search = search;
-        
-        // Район
-        const district = document.getElementById('districtFilter')?.value;
-        if (district) filters.district = district;
-        
-        // Тип
-        const paid = document.getElementById('paidFilter')?.value;
-        if (paid !== '') filters.is_paid = paid === '1';
-        
-        // Чекбоксы оборудования
-        if (document.getElementById('filter_rental')?.checked) filters.has_equipment_rental = true;
-        if (document.getElementById('filter_locker')?.checked) filters.has_locker_room = true;
-        if (document.getElementById('filter_cafe')?.checked) filters.has_cafe = true;
-        if (document.getElementById('filter_wifi')?.checked) filters.has_wifi = true;
-        if (document.getElementById('filter_atm')?.checked) filters.has_atm = true;
-        if (document.getElementById('filter_medpoint')?.checked) filters.has_medpoint = true;
-        if (document.getElementById('filter_disabled')?.checked) filters.is_disabled_accessible = true;
-        
-        currentFilters = filters;
-        
-        // Обновляем карту и список моментально
-        await loadRinksOnMap(filters);
-        await loadRinksForMap(filters);
-    }, 300); // Задержка 300мс
-}
-
-// Сбросить фильтры
-function resetFilters() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('districtFilter').value = '';
-    document.getElementById('paidFilter').value = '';
+/**
+ * Обновление меток друзей на карте (для группового поиска)
+ */
+function updateGroupPlacemarks(points) {
+    // Эта функция остается без изменений
+    if (!map) return;
     
-    // Сбрасываем все чекбоксы
-    const checkboxes = ['filter_rental', 'filter_locker', 'filter_cafe', 'filter_wifi', 'filter_atm', 'filter_medpoint', 'filter_disabled'];
-    checkboxes.forEach(id => {
-        const cb = document.getElementById(id);
-        if (cb) cb.checked = false;
+    // Удаляем старые метки друзей (если есть)
+    if (window.groupPlacemarks) {
+        window.groupPlacemarks.forEach(pm => map.geoObjects.remove(pm));
+    }
+    window.groupPlacemarks = [];
+    
+    points.forEach((point, index) => {
+        const placemark = new ymaps.Placemark(
+            [point.latitude, point.longitude],
+            {
+                balloonContent: `<strong>Точка ${index + 1}</strong><br>Координаты: ${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}`,
+                hintContent: `Участник ${index + 1}`
+            },
+            {
+                preset: 'islands#redPersonIcon' // Красные иконки-человечки для участников
+            }
+        );
+        map.geoObjects.add(placemark);
+        window.groupPlacemarks.push(placemark);
     });
-    
-    applyFilters();
-}
-
-// Инициализация при загрузке страницы
-if (document.getElementById('map')) {
-    // Загружаем список районов
-    loadDistrictsForMap();
-    
-    // Если Yandex Maps не загружен, показываем список катков
-    if (typeof ymaps === 'undefined') {
-        console.log('Yandex Maps API не загружен, показываем список катков');
-        loadRinksForMap();
-    } else {
-        initMap();
-    }
-}
-
-// Загрузка катков для отображения списком (если карта не работает)
-async function loadRinksForMap(filters = {}) {
-    const result = await API.getRinks(filters);
-    if (result.success && result.data.results) {
-        const container = document.getElementById('rinksListMap');
-        if (container) {
-            let html = '';
-            result.data.results.forEach(rink => {
-                const badge = rink.is_paid ? '<span class="badge bg-warning">Платный</span>' : '<span class="badge bg-success">Бесплатный</span>';
-                html += `
-                    <div class="col-md-6 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">${rink.name}</h5>
-                                <p class="card-text text-muted">${rink.address || ''}</p>
-                                <p>${badge} ${rink.district ? '<span class="badge bg-secondary">' + rink.district + '</span>' : ''}</p>
-                                <a href="rink.html?id=${rink.id}" class="btn btn-primary btn-sm">Подробнее</a>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html || '<div class="col-12"><p class="text-muted">Катки не найдены</p></div>';
-        }
-    }
-}
-
-// Загрузка списка районов для фильтра
-async function loadDistrictsForMap() {
-    const result = await API.getRinks();
-    if (result.success) {
-        const districts = [...new Set(result.data.results.map(r => r.district).filter(Boolean))].sort();
-        const select = document.getElementById('districtFilter');
-        if (select) {
-            districts.forEach(district => {
-                const option = document.createElement('option');
-                option.value = district;
-                option.textContent = district;
-                select.appendChild(option);
-            });
-        }
-    }
 }

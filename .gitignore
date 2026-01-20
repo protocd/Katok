@@ -1,6 +1,5 @@
-# Конфигурационные файлы с секретами
+# Конфигурация
 backend/config/config.php
-backend/config/database.php
 
 # Логи
 *.log
@@ -17,7 +16,7 @@ Thumbs.db
 *.swp
 *.swo
 
-# Зависимости (если будут)
+# Зависимости
 vendor/
 node_modules/
 
@@ -25,5 +24,10 @@ node_modules/
 cache/
 *.cache
 
-# Загруженные файлы (если будут)
-uploads/
+# Загруженные файлы
+backend/uploads/
+frontend/uploads/
+
+# Тестовые файлы
+backend/test/*.php
+!backend/test/test_connection.php

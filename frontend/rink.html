@@ -6,6 +6,8 @@
     <title>Каток - Катки Москвы</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <!-- Chart.js для графиков -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -27,6 +29,42 @@
             </div>
         </div>
 
+        <!-- Блок статистики с графиками -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">📊 Популярность по дням недели</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="popularityChartContainer">
+                            <canvas id="popularityChart" height="200"></canvas>
+                        </div>
+                        <div id="popularityChartEmpty" class="text-center text-muted py-4 d-none">
+                            <p class="mb-2">Пока данных нет</p>
+                            <p class="small">Оцените первым или отметьтесь первым</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">🧊 Оценки посетителей</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="ratingsChartContainer">
+                            <canvas id="ratingsChart" height="200"></canvas>
+                        </div>
+                        <div id="ratingsChartEmpty" class="text-center text-muted py-4 d-none">
+                            <p class="mb-2">Пока данных нет</p>
+                            <p class="small">Оцените первым или отметьтесь первым</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <!-- Отзывы -->
             <div class="col-md-8">
@@ -38,6 +76,7 @@
                         <!-- Форма отзыва (только для авторизованных) -->
                         <div id="reviewForm" class="d-none mb-4">
                             <h6>Оставить отзыв</h6>
+                            <p class="text-muted small mb-3">💡 Написание отзыва засчитывается как одно посещение</p>
                             <form onsubmit="handleReviewSubmit(event)">
                                 <div class="mb-3">
                                     <label class="form-label">Оценка</label>
@@ -73,7 +112,7 @@
                                     <textarea class="form-control" id="reviewText" rows="3"></textarea>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Фото (опционально)</label>
+                                    <label class="form-label">Фото</label>
                                     <input type="file" class="form-control" id="reviewPhoto" accept="image/*">
                                 </div>
                                 <button type="submit" class="btn btn-primary">Отправить отзыв</button>
@@ -92,7 +131,7 @@
                 <div class="card mb-3">
                     <div class="card-body">
                         <h6>Отметка присутствия</h6>
-                        <p class="text-muted small">Отметьтесь, если вы сейчас на катке</p>
+                        <p class="text-muted small">Отмечайся, чтобы получить возможность создавать события и присоединяться к ним</p>
                         <button class="btn btn-success w-100" onclick="handleCheckin()" id="checkinBtn">Я здесь!</button>
                         <div id="checkinResult" class="mt-2"></div>
                     </div>
@@ -104,7 +143,12 @@
                         <h6>События</h6>
                     </div>
                     <div class="card-body">
-                        <button class="btn btn-primary btn-sm mb-3" onclick="showCreateEvent()" id="createEventBtn">Создать событие</button>
+                        <div id="createEventContainer">
+                            <button class="btn btn-primary btn-sm mb-2 w-100" onclick="showCreateEvent()" id="createEventBtn">
+                                <span id="createEventIcon">🔒</span> Создать событие
+                            </button>
+                            <small id="createEventHint" class="text-muted d-block text-center mb-3"></small>
+                        </div>
                         <div id="eventsList"></div>
                     </div>
                 </div>
@@ -119,11 +163,14 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const rinkId = urlParams.get('id');
+        let currentRinkData = null; // Сохраняем данные катка
 
         async function loadRink() {
             const rink = await API.getRink(rinkId);
             if (rink.success) {
                 const data = rink.data;
+                currentRinkData = data; // Сохраняем для использования в других функциях
+                
                 document.getElementById('rinkName').textContent = data.name;
                 document.getElementById('rinkAddress').textContent = data.address || '';
                 
@@ -139,6 +186,13 @@
             // Загружаем отзывы (это также скроет форму, если отзыв уже есть)
             loadReviews();
         }
+        
+        // Проверка, является ли каток тестовым (без ограничений)
+        function isTestRink() {
+            if (!currentRinkData) return false;
+            return (currentRinkData.name && currentRinkData.name.includes('Дворовая территория')) ||
+                   (currentRinkData.address && currentRinkData.address.includes('Рогово'));
+        }
 
         async function handleCheckin() {
             if (!Auth.isLoggedIn()) {
@@ -152,13 +206,92 @@
                     document.getElementById('checkinResult').innerHTML = 
                         result.success ? '<div class="alert alert-success">Отмечено!</div>' : 
                         '<div class="alert alert-danger">' + result.message + '</div>';
+                    
+                    // Обновляем количество посещений после успешного чек-ина
+                    if (result.success) {
+                        loadUserVisitCount();
+                    }
                 });
             } else {
                 alert('Геолокация не поддерживается');
             }
         }
 
+        async function loadUserVisitCount() {
+            if (!Auth.isLoggedIn()) {
+                const btn = document.getElementById('createEventBtn');
+                const hint = document.getElementById('createEventHint');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('btn-secondary');
+                    btn.classList.remove('btn-primary');
+                }
+                if (hint) {
+                    hint.textContent = 'Войдите в систему для создания событий';
+                }
+                return;
+            }
+            
+            if (isTestRink()) {
+                updateCreateEventButton(0, true);
+                return;
+            }
+            
+            try {
+                const result = await API.getUserVisitCount(rinkId);
+                if (result.success && result.data.user_visit_count !== undefined) {
+                    const visitCount = result.data.user_visit_count;
+                    const canCreate = result.data.can_create_event || false;
+                    updateCreateEventButton(visitCount, canCreate);
+                }
+            } catch (error) {
+                // Игнорируем ошибки
+            }
+        }
+        
+        function updateCreateEventButton(visitCount, canCreate) {
+            const btn = document.getElementById('createEventBtn');
+            const hint = document.getElementById('createEventHint');
+            const icon = document.getElementById('createEventIcon');
+            
+            if (!btn || !hint || !icon) return;
+            
+            if (canCreate) {
+                btn.disabled = false;
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-primary');
+                icon.textContent = '➕';
+                hint.textContent = '';
+                hint.classList.add('d-none');
+            } else {
+                btn.disabled = true;
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+                icon.textContent = '🔒';
+                const remaining = 5 - visitCount;
+                hint.textContent = `Для создания события нужно 5 посещений (осталось ${remaining})`;
+                hint.classList.remove('d-none');
+            }
+        }
+        
         async function showCreateEvent() {
+            if (!Auth.isLoggedIn()) {
+                alert('Войдите в систему для создания события');
+                return;
+            }
+            
+            if (!isTestRink()) {
+                const result = await API.getUserVisitCount(rinkId);
+                if (result.success && result.data.user_visit_count !== undefined) {
+                    const visitCount = result.data.user_visit_count;
+                    if (visitCount < 5) {
+                        const remaining = 5 - visitCount;
+                        alert(`Для создания события нужно отметитьсь на катке минимум 5 раз. У вас: ${visitCount}. Осталось: ${remaining}`);
+                        return;
+                    }
+                }
+            }
+            
             const title = prompt('Название события:');
             if (!title) return;
             
@@ -166,47 +299,265 @@
             const date = prompt('Дата (YYYY-MM-DD):');
             const time = prompt('Время (HH:MM):');
             
-            const result = await API.createEvent(rinkId, title, description, date, time);
-            if (result.success) {
+            const createResult = await API.createEvent(rinkId, title, description, date, time);
+            if (createResult.success) {
                 loadEvents();
+                // Обновляем количество посещений после создания события (на случай, если оно изменилось)
+                loadUserVisitCount();
             } else {
-                alert(result.message);
+                alert(createResult.message);
             }
         }
 
         async function loadEvents() {
             const events = await API.getEvents(rinkId);
             if (events.success) {
+                const currentUser = Auth.getUser();
+                const currentUserId = currentUser ? currentUser.id : null;
+                
                 let html = '';
-                events.data.forEach(event => {
-                    html += `<div class="card mb-2">
-                        <div class="card-body">
-                            <h6>${event.title}</h6>
-                            <p class="small">${event.description || ''}</p>
-                            <p class="small text-muted">${event.event_date} ${event.event_time}</p>
-                            <button class="btn btn-sm btn-primary" onclick="joinEvent(${event.id})">Присоединиться</button>
-                        </div>
-                    </div>`;
-                });
-                document.getElementById('eventsList').innerHTML = html || '<p class="text-muted">Нет событий</p>';
+                if (events.data.length === 0) {
+                    html = '<p class="text-muted">Нет событий</p>';
+                } else {
+                    events.data.forEach(event => {
+                        const isCreator = event.is_creator || (currentUserId && event.created_by == currentUserId);
+                        const isParticipant = event.is_participant || false;
+                        const participantsCount = event.participants_count || 0;
+                        
+                        let joinButton = '';
+                        if (Auth.isLoggedIn()) {
+                            if (isParticipant) {
+                                joinButton = `<button class="btn btn-sm btn-outline-danger" onclick="joinEvent(${event.id})" id="event-btn-${event.id}">Я не приду</button>`;
+                            } else {
+                                joinButton = `<button class="btn btn-sm btn-primary" onclick="joinEvent(${event.id})" id="event-btn-${event.id}">Присоединиться</button>`;
+                            }
+                        }
+                        
+                        html += `<div class="card mb-2" id="event-${event.id}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0">${event.title}</h6>
+                                    ${isCreator ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteEvent(${event.id})" title="Удалить событие">🗑️</button>` : ''}
+                                </div>
+                                <p class="small mb-2">${event.description || 'Без описания'}</p>
+                                <p class="small text-muted mb-2">📅 ${event.event_date} ${event.event_time || ''}</p>
+                                <p class="small mb-2">👤 Создатель: ${event.creator_name || 'Неизвестно'}</p>
+                                <p class="small mb-2"><strong>👥 Участников: <span id="event-participants-${event.id}">${participantsCount}</span></strong></p>
+                                ${joinButton}
+                            </div>
+                        </div>`;
+                    });
+                }
+                document.getElementById('eventsList').innerHTML = html;
+            } else {
+                document.getElementById('eventsList').innerHTML = '<p class="text-danger">Ошибка загрузки событий</p>';
             }
         }
 
         async function joinEvent(eventId) {
+            if (!Auth.isLoggedIn()) {
+                alert('Войдите в систему, чтобы присоединиться к событию');
+                return;
+            }
+            
             const result = await API.joinEvent(eventId);
-            alert(result.success ? 'Вы присоединились!' : result.message);
-            loadEvents();
+            if (result.success) {
+                const participantsSpan = document.getElementById(`event-participants-${eventId}`);
+                if (participantsSpan && result.data) {
+                    participantsSpan.textContent = result.data.participants_count || 0;
+                }
+                
+                const btn = document.getElementById(`event-btn-${eventId}`);
+                if (btn) {
+                    if (result.data.is_participant) {
+                        btn.textContent = 'Я не приду';
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-outline-danger');
+                    } else {
+                        btn.textContent = 'Присоединиться';
+                        btn.classList.remove('btn-outline-danger');
+                        btn.classList.add('btn-primary');
+                    }
+                }
+            } else {
+                alert(result.message);
+            }
+        }
+        
+        async function deleteEvent(eventId) {
+            if (!confirm('Вы уверены, что хотите удалить это событие?')) {
+                return;
+            }
+            
+            try {
+                if (typeof API.deleteEvent !== 'function') {
+                    const result = await API.request(`/events.php?id=${eventId}`, 'DELETE');
+                    if (result.success) {
+                        loadEvents();
+                    } else {
+                        alert('Ошибка: ' + (result.message || 'Неизвестная ошибка'));
+                    }
+                } else {
+                    const result = await API.deleteEvent(eventId);
+                    if (result.success) {
+                        loadEvents();
+                    } else {
+                        alert('Ошибка: ' + (result.message || 'Неизвестная ошибка'));
+                    }
+                }
+            } catch (error) {
+                alert('Ошибка при удалении: ' + error.message);
+            }
+        }
+        
+        // Делаем функцию доступной глобально
+        window.deleteEvent = deleteEvent;
+
+        let popularityChart, ratingsChart;
+
+        async function loadCharts() {
+            const reviewsResult = await API.getReviews(rinkId);
+            const reviews = reviewsResult.success ? (reviewsResult.data.reviews || []) : [];
+            
+            const checkinsResult = await API.getCheckins(rinkId, 8760);
+            const checkins = checkinsResult.success ? (checkinsResult.data.checkins || []) : [];
+            
+            const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+            const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+            
+            checkins.forEach(checkin => {
+                if (checkin.timestamp) {
+                    const date = new Date(checkin.timestamp);
+                    const day = date.getDay();
+                    const idx = day === 0 ? 6 : day - 1;
+                    dayCounts[idx]++;
+                }
+            });
+            
+            const hasPopularityData = dayCounts.some(c => c > 0);
+            const popularityContainer = document.getElementById('popularityChartContainer');
+            const popularityEmpty = document.getElementById('popularityChartEmpty');
+            
+            if (hasPopularityData) {
+                popularityContainer.classList.remove('d-none');
+                popularityEmpty.classList.add('d-none');
+                
+                if (popularityChart) {
+                    popularityChart.destroy();
+                }
+                
+                const ctxPopularity = document.getElementById('popularityChart').getContext('2d');
+                popularityChart = new Chart(ctxPopularity, {
+                    type: 'bar',
+                    data: {
+                        labels: dayNames,
+                        datasets: [{
+                            label: 'Активность',
+                            data: dayCounts,
+                            backgroundColor: [
+                                'rgba(54, 162, 235, 0.7)',
+                                'rgba(54, 162, 235, 0.7)',
+                                'rgba(54, 162, 235, 0.7)',
+                                'rgba(54, 162, 235, 0.7)',
+                                'rgba(75, 192, 192, 0.7)',
+                                'rgba(255, 159, 64, 0.8)',
+                                'rgba(255, 99, 132, 0.8)'
+                            ],
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                        }
+                    }
+                });
+            } else {
+                popularityContainer.classList.add('d-none');
+                popularityEmpty.classList.remove('d-none');
+            }
+
+            const ratingCounts = [0, 0, 0, 0, 0];
+            reviews.forEach(review => {
+                if (review.rating >= 1 && review.rating <= 5) {
+                    ratingCounts[review.rating - 1]++;
+                }
+            });
+            
+            const hasRatingsData = ratingCounts.some(c => c > 0);
+            const ratingsContainer = document.getElementById('ratingsChartContainer');
+            const ratingsEmpty = document.getElementById('ratingsChartEmpty');
+            
+            if (hasRatingsData) {
+                ratingsContainer.classList.remove('d-none');
+                ratingsEmpty.classList.add('d-none');
+                
+                if (ratingsChart) {
+                    ratingsChart.destroy();
+                }
+                
+                const ctxRatings = document.getElementById('ratingsChart').getContext('2d');
+                ratingsChart = new Chart(ctxRatings, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['⭐ 1', '⭐ 2', '⭐ 3', '⭐ 4', '⭐ 5'],
+                        datasets: [{
+                            data: ratingCounts,
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.8)',
+                                'rgba(255, 159, 64, 0.8)',
+                                'rgba(255, 205, 86, 0.8)',
+                                'rgba(75, 192, 192, 0.8)',
+                                'rgba(54, 162, 235, 0.8)'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { font: { size: 11 } }
+                            }
+                        }
+                    }
+                });
+            } else {
+                ratingsContainer.classList.add('d-none');
+                ratingsEmpty.classList.remove('d-none');
+            }
         }
 
-        // Инициализация после загрузки страницы
+        const originalLoadReviews = window.loadReviews;
+        window.loadReviews = async function() {
+            if (typeof originalLoadReviews === 'function') {
+                await originalLoadReviews();
+            }
+            loadCharts();
+        };
+
         window.addEventListener('load', () => {
+            if (typeof API === 'undefined') {
+                alert('Ошибка загрузки API. Обновите страницу (Ctrl+F5)');
+                return;
+            }
+            
             if (rinkId) {
                 loadRink();
-                // loadReviews() вызывается внутри loadRink()
+                loadCharts();
                 if (typeof loadReviews === 'function') {
                     loadReviews();
                 }
                 loadEvents();
+                loadUserVisitCount();
             }
         });
     </script>
