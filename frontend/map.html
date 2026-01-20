@@ -54,6 +54,54 @@
     <div class="container mt-4">
         <h2 class="mb-4">Карта катков Москвы</h2>
         
+        <!-- Поиск и фильтры -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Поиск -->
+                            <div class="col-md-4">
+                                <label class="form-label">Поиск</label>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Название или адрес..." oninput="applyFilters()">
+                            </div>
+                            <!-- Район -->
+                            <div class="col-md-2">
+                                <label class="form-label">Район</label>
+                                <select class="form-select" id="districtFilter" onchange="applyFilters()">
+                                    <option value="">Все районы</option>
+                                </select>
+                            </div>
+                            <!-- Тип -->
+                            <div class="col-md-2">
+                                <label class="form-label">Тип</label>
+                                <select class="form-select" id="paidFilter" onchange="applyFilters()">
+                                    <option value="">Все</option>
+                                    <option value="0">Бесплатные</option>
+                                    <option value="1">Платные</option>
+                                </select>
+                            </div>
+                            <!-- Оборудование -->
+                            <div class="col-md-2">
+                                <label class="form-label">Оборудование</label>
+                                <select class="form-select" id="equipmentFilter" onchange="applyFilters()">
+                                    <option value="">Все</option>
+                                    <option value="rental">С прокатом</option>
+                                    <option value="locker">С раздевалкой</option>
+                                    <option value="cafe">С кафе</option>
+                                </select>
+                            </div>
+                            <!-- Кнопка сброса -->
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-secondary w-100" onclick="resetFilters()">Сбросить</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Карта -->
         <div id="map"></div>
         

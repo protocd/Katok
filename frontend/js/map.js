@@ -1,6 +1,7 @@
 // Работа с Яндекс.Картами
 let map;
 let placemarks = [];
+let currentFilters = {};
 
 async function initMap() {
     if (typeof ymaps === 'undefined') {
@@ -18,8 +19,8 @@ async function initMap() {
     });
 }
 
-async function loadRinksOnMap() {
-    const result = await API.getRinks();
+async function loadRinksOnMap(filters = {}) {
+    const result = await API.getRinks(filters);
     if (!result.success || !map) return;
     
     // Удаляем старые метки
@@ -32,7 +33,7 @@ async function loadRinksOnMap() {
             const placemark = new ymaps.Placemark(
                 [rink.latitude, rink.longitude],
                 {
-                    balloonContent: `<b>${rink.name}</b><br>${rink.address || ''}`,
+                    balloonContent: `<b>${rink.name}</b><br>${rink.address || ''}<br><a href="rink.html?id=${rink.id}">Подробнее</a>`,
                     hintContent: rink.name
                 },
                 {
@@ -51,11 +52,67 @@ async function loadRinksOnMap() {
     
     if (placemarks.length > 0) {
         map.setBounds(map.geoObjects.getBounds());
+    } else {
+        // Если нет катков, показываем сообщение
+        map.setCenter([55.751244, 37.618423], 10);
     }
+}
+
+// Применить фильтры
+function applyFilters() {
+    const filters = {};
+    
+    // Поиск
+    const search = document.getElementById('searchInput')?.value.trim();
+    if (search) {
+        filters.search = search;
+    }
+    
+    // Район
+    const district = document.getElementById('districtFilter')?.value;
+    if (district) {
+        filters.district = district;
+    }
+    
+    // Тип (платный/бесплатный)
+    const paid = document.getElementById('paidFilter')?.value;
+    if (paid !== '') {
+        filters.is_paid = paid === '1';
+    }
+    
+    // Оборудование
+    const equipment = document.getElementById('equipmentFilter')?.value;
+    if (equipment) {
+        if (equipment === 'rental') {
+            filters.has_equipment_rental = true;
+        } else if (equipment === 'locker') {
+            filters.has_locker_room = true;
+        } else if (equipment === 'cafe') {
+            filters.has_cafe = true;
+        }
+    }
+    
+    currentFilters = filters;
+    
+    // Обновляем карту и список
+    loadRinksOnMap(filters);
+    loadRinksForMap(filters);
+}
+
+// Сбросить фильтры
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('districtFilter').value = '';
+    document.getElementById('paidFilter').value = '';
+    document.getElementById('equipmentFilter').value = '';
+    applyFilters();
 }
 
 // Инициализация при загрузке страницы
 if (document.getElementById('map')) {
+    // Загружаем список районов
+    loadDistrictsForMap();
+    
     // Если Yandex Maps не загружен, показываем список катков
     if (typeof ymaps === 'undefined') {
         console.log('Yandex Maps API не загружен, показываем список катков');
@@ -66,8 +123,8 @@ if (document.getElementById('map')) {
 }
 
 // Загрузка катков для отображения списком (если карта не работает)
-async function loadRinksForMap() {
-    const result = await API.getRinks();
+async function loadRinksForMap(filters = {}) {
+    const result = await API.getRinks(filters);
     if (result.success && result.data.results) {
         const container = document.getElementById('rinksListMap');
         if (container) {
@@ -88,6 +145,23 @@ async function loadRinksForMap() {
                 `;
             });
             container.innerHTML = html || '<div class="col-12"><p class="text-muted">Катки не найдены</p></div>';
+        }
+    }
+}
+
+// Загрузка списка районов для фильтра
+async function loadDistrictsForMap() {
+    const result = await API.getRinks();
+    if (result.success) {
+        const districts = [...new Set(result.data.results.map(r => r.district).filter(Boolean))].sort();
+        const select = document.getElementById('districtFilter');
+        if (select) {
+            districts.forEach(district => {
+                const option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                select.appendChild(option);
+            });
         }
     }
 }
